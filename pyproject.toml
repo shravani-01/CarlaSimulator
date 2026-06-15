@@ -1,0 +1,78 @@
+[project]
+name = "carla-perception"
+version = "0.0.1"
+description = "Camera-based self-driving perception stack in CARLA: VO/SLAM + 3D detection & tracking + segmentation + Gaussian-Splatting reconstruction."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "Shra" }]
+
+# Core runtime deps. Heavy/optional stacks (carla, torch, gsplat) are grouped
+# as extras so the base install stays light and CI stays fast.
+dependencies = [
+    "numpy>=1.24",
+    "opencv-python>=4.9",
+    "pyyaml>=6.0",
+    "hydra-core>=1.3",
+    "omegaconf>=2.3",
+    "rich>=13.0",
+    "tqdm>=4.66",
+]
+
+[project.optional-dependencies]
+# Deep-learning perception (detection / segmentation / depth / tracking)
+ml = [
+    "torch>=2.2",
+    "torchvision>=0.17",
+    "ultralytics>=8.3",
+    "segmentation-models-pytorch>=0.3",
+]
+# 3D + neural rendering + visualization
+threed = [
+    "open3d>=0.18",
+    "rerun-sdk>=0.16",
+    "gsplat>=1.0",
+]
+# Experiment tracking / data versioning
+ops = [
+    "dvc>=3.0",
+    "wandb>=0.17",
+]
+# Web demo
+frontend = [
+    "streamlit>=1.36",
+    "fastapi>=0.111",
+    "uvicorn>=0.30",
+]
+# Dev tooling
+dev = [
+    "pytest>=8.0",
+    "ruff>=0.5",
+    "mypy>=1.10",
+    "pre-commit>=3.7",
+]
+
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["perception_py"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+ignore = ["E501"]
+
+[tool.mypy]
+python_version = "3.10"
+ignore_missing_imports = true
+warn_unused_ignores = true
+disallow_untyped_defs = false
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

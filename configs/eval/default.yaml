@@ -1,0 +1,12 @@
+# Evaluation metrics + robustness slices.
+name: default
+
+odometry:
+  metrics: [ate, rpe]      # absolute / relative pose error
+segmentation:
+  metrics: [miou]
+detection:
+  metrics: [map_50, map_50_95]
+
+# Robustness study slices (Phase 5): re-run eval per scenario preset.
+robustness_presets: [ClearNoon, WetNoon, HardRainNoon, ClearNight]

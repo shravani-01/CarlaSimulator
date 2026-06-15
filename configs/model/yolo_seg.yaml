@@ -1,0 +1,18 @@
+# Phase 1 perception model config (detection + segmentation).
+name: yolo_seg
+
+detection:
+  arch: yolo            # ultralytics YOLO
+  weights: yolo11n.pt   # start from pretrained, fine-tune on CARLA
+  conf_threshold: 0.25
+  iou_threshold: 0.7
+
+segmentation:
+  arch: unet
+  encoder: resnet34
+  num_classes: 23       # CARLA semantic classes
+
+tracking:
+  arch: bytetrack
+  track_thresh: 0.5
+  match_thresh: 0.8
