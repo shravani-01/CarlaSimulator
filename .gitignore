@@ -48,3 +48,4 @@ recordings/
 
 # Hydra run outputs
 outputs/
+*.pt
