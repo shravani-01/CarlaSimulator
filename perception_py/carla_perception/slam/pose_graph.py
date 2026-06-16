@@ -34,6 +34,7 @@ from dataclasses import dataclass, field
 import numpy as np
 from numpy.typing import NDArray
 from scipy.optimize import least_squares
+from scipy.sparse import lil_matrix
 
 Pose = tuple[float, float, float]  # (x, y, theta)
 
@@ -83,8 +84,14 @@ class PoseGraph:
         """Nx2 (x, y) positions in node-id order."""
         return np.array([[self.nodes[k][0], self.nodes[k][1]] for k in sorted(self.nodes)])
 
-    def optimize(self, max_iter: int = 100) -> PoseGraph:
-        """Optimize all poses to best satisfy the edges (first node anchored)."""
+    def optimize(
+        self, max_iter: int = 30, loss: str = "soft_l1", f_scale: float = 3.0
+    ) -> PoseGraph:
+        """Optimize all poses to best satisfy the edges (first node anchored).
+
+        A robust `loss` (default soft_l1) down-weights outlier edges so a few bad
+        loop closures can't dominate the solution.
+        """
         order = sorted(self.nodes)
         anchor = order[0]
         free = order[1:]
@@ -108,7 +115,25 @@ class PoseGraph:
                 res.extend(np.sqrt(e.weight) * err)
             return np.array(res)
 
-        sol = least_squares(residuals, x0, max_nfev=max_iter * max(1, len(x0)))
+        # Exploit sparsity: each edge residual depends only on its two nodes, so
+        # the Jacobian is mostly zeros. Telling scipy this lets it estimate the
+        # Jacobian in a few evals (graph coloring) instead of one-per-parameter
+        # -> orders of magnitude faster on large graphs.
+        n_res, n_par = 3 * len(self.edges), len(x0)
+        sparsity = None
+        if n_res and n_par:
+            sparsity = lil_matrix((n_res, n_par), dtype=int)
+            for e_idx, e in enumerate(self.edges):
+                r = 3 * e_idx
+                for nid in (e.i, e.j):
+                    if nid in index:
+                        c = 3 * index[nid]
+                        sparsity[r : r + 3, c : c + 3] = 1
+
+        sol = least_squares(
+            residuals, x0, jac_sparsity=sparsity, loss=loss, f_scale=f_scale,
+            max_nfev=max_iter * 50,
+        )
 
         updated = poses_from(sol.x)
         for idx in self.nodes:

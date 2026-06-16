@@ -1,26 +1,26 @@
 """Stereo SLAM = stereo VO front-end + loop closure + pose-graph back-end.
 
-PIPELINE
---------
-1. Run stereo VO per frame for accurate frame-to-frame motion (metric scale).
-2. Every `keyframe_stride` frames, add a KEYFRAME node to a pose graph, with an
-   odometry edge to the previous keyframe (from VO).
-3. LOOP DETECTION: when a keyframe lands spatially near a much earlier keyframe,
-   VERIFY it's truly the same place by matching features and solving PnP. If it
-   passes, add a loop-closure edge (a metric relative-pose constraint).
-4. OPTIMIZE the pose graph: the loop edges let drift be redistributed so the
-   trajectory closes.
+PIPELINE (split for fast iteration)
+-----------------------------------
+1. build_keyframes(): run stereo VO once and extract per-keyframe features +
+   metric 3D points + pose. This is the SLOW part -> cache it to disk.
+2. build_graph(): from cached keyframes, add odometry edges and detect+verify
+   loop closures. FAST, so loop-closure params can be tuned cheaply.
+3. optimize(): pose-graph optimization (robust loss) to redistribute drift.
 
 We keep the graph in the planar SE2 (x-z, yaw) form (cars drive on ~flat ground).
 """
 
 from __future__ import annotations
 
+import pickle
+from pathlib import Path
+
 import cv2
 import numpy as np
 from numpy.typing import NDArray
 
-from carla_perception.slam.pose_graph import PoseGraph
+from carla_perception.slam.pose_graph import PoseGraph, t2v, v2t
 from carla_perception.vo.stereo_vo import (
     StereoVO,
     compute_stereo_points,
@@ -30,23 +30,17 @@ from carla_perception.vo.stereo_vo import (
 
 
 def pose_to_se2(T: NDArray[np.float64]) -> tuple[float, float, float]:
-    """4x4 pose (KITTI: x right, z forward) -> planar SE2 (x, z, yaw)."""
-    yaw = float(np.arctan2(T[0, 2], T[2, 2]))
+    """4x4 pose (KITTI: x right, z forward) -> planar SE2 (x, z, yaw).
+
+    yaw uses atan2(R[2,0], R[0,0]) so that v2t(pose_to_se2(T)) reproduces the
+    planar (x-z) submatrix of T exactly (KITTI's y axis points DOWN).
+    """
+    yaw = float(np.arctan2(T[2, 0], T[0, 0]))
     return (float(T[0, 3]), float(T[2, 3]), yaw)
 
 
 class StereoSLAM:
-    """Stereo VO with loop closure and pose-graph optimization.
-
-    Args:
-        K, baseline: left intrinsics + stereo baseline (metres).
-        keyframe_stride: add a graph node every N frames.
-        loop_radius: search earlier keyframes within this many metres (generous,
-            to tolerate drift; PnP verification rejects false matches).
-        min_loop_gap: minimum keyframe-index separation to count as a loop.
-        min_loop_inliers: PnP inliers required to accept a loop.
-        loop_weight: relative weight of loop edges vs odometry edges.
-    """
+    """Stereo VO with loop closure and pose-graph optimization."""
 
     def __init__(
         self,
@@ -55,8 +49,9 @@ class StereoSLAM:
         keyframe_stride: int = 10,
         loop_radius: float = 25.0,
         min_loop_gap: int = 50,
-        min_loop_inliers: int = 25,
-        loop_weight: float = 5.0,
+        min_loop_inliers: int = 30,
+        loop_weight: float = 2.0,
+        max_correction: float = 40.0,
     ) -> None:
         self.K = np.asarray(K, dtype=np.float64)
         self.baseline = baseline
@@ -65,85 +60,103 @@ class StereoSLAM:
         self.min_loop_gap = min_loop_gap
         self.min_loop_inliers = min_loop_inliers
         self.loop_weight = loop_weight
+        self.max_correction = max_correction
 
-        self.vo = StereoVO(K, baseline)
-        self.graph = PoseGraph()
-        self._orb = cv2.ORB_create(nfeatures=3000)
         self._bf = cv2.BFMatcher(cv2.NORM_HAMMING)
-
-        self.keyframes: list[dict] = []   # pose, pos(x,z), kp, des, des3d, X3d, frame
+        self.keyframes: list[dict] = []
+        self.graph = PoseGraph()
         self.loops: list[tuple[int, int]] = []
-        self.vo_positions: NDArray | None = None        # before optimization
-        self.optimized_positions: NDArray | None = None  # after
+        self.vo_positions: NDArray | None = None
+        self.optimized_positions: NDArray | None = None
 
-    def build(self, stereo_frames, total: int | None = None, log_every: int = 200) -> None:
-        """Consume (left, right) pairs, building the keyframe graph + loop edges."""
+    # ---- Step 1: slow front-end (cacheable) -------------------------------
+    def build_keyframes(self, stereo_frames, total: int | None = None, log_every: int = 200):
+        """Run VO and store per-keyframe features/3D/pose (the slow part)."""
+        vo = StereoVO(self.K, self.baseline)
+        orb = cv2.ORB_create(nfeatures=3000)
         for f, (left, right) in enumerate(stereo_frames):
-            self.vo.process(left, right)
+            vo.process(left, right)
             if f % self.keyframe_stride != 0:
                 continue
             if total and f % log_every == 0:
-                print(f"  frame {f}/{total} | keyframes={len(self.keyframes)} loops={len(self.loops)}")
-            self._add_keyframe(f, left, right)
+                print(f"  frame {f}/{total} | keyframes={len(self.keyframes)}")
+            kp, des, des3d, X3d = compute_stereo_points(
+                left, right, self.K, self.baseline, orb, self._bf
+            )
+            kp_pts = np.array([k.pt for k in kp], dtype=np.float64) if kp else np.zeros((0, 2))
+            self.keyframes.append({
+                "id": len(self.keyframes), "frame": f,
+                "pose": vo.pose.copy(),
+                "pos": np.array([vo.pose[0, 3], vo.pose[2, 3]]),
+                "kp_pts": kp_pts, "des": des, "des3d": des3d, "X3d": X3d,
+            })
 
+    def save_keyframes(self, path: str | Path) -> None:
+        Path(path).parent.mkdir(parents=True, exist_ok=True)
+        with open(path, "wb") as fh:
+            pickle.dump(self.keyframes, fh)
+
+    def load_keyframes(self, path: str | Path) -> None:
+        with open(path, "rb") as fh:
+            self.keyframes = pickle.load(fh)
+
+    # ---- Step 2: fast graph build + loop closure --------------------------
+    def build_graph(self) -> None:
+        """(Re)build the pose graph with odometry + loop-closure edges (fast)."""
+        self.graph = PoseGraph()
+        self.loops = []
+        for kf in self.keyframes:
+            se2 = pose_to_se2(kf["pose"])
+            self.graph.add_node(kf["id"], se2)
+            if kf["id"] > 0:
+                prev_se2 = self.graph.nodes[kf["id"] - 1]
+                rel = t2v(np.linalg.inv(v2t(prev_se2)) @ v2t(se2))
+                self.graph.add_edge(kf["id"] - 1, kf["id"], tuple(rel), weight=1.0)
+            self._detect_loops(kf)
         self.vo_positions = self.graph.positions().copy()
 
-    def _add_keyframe(self, frame_idx: int, left, right) -> None:
-        pose = self.vo.pose.copy()
-        kp, des, des3d, X3d = compute_stereo_points(
-            left, right, self.K, self.baseline, self._orb, self._bf
-        )
-        node_id = len(self.keyframes)
-        self.graph.add_node(node_id, pose_to_se2(pose))
-
-        if self.keyframes:  # odometry edge from VO relative motion
-            prev = self.keyframes[-1]
-            rel = np.linalg.inv(prev["pose"]) @ pose
-            self.graph.add_edge(prev["id"], node_id, pose_to_se2(rel), weight=1.0)
-
-        kf = {
-            "id": node_id, "frame": frame_idx, "pose": pose,
-            "pos": np.array([pose[0, 3], pose[2, 3]]),
-            "kp": kp, "des": des, "des3d": des3d, "X3d": X3d,
-        }
-        self._detect_loops(kf)
-        self.keyframes.append(kf)
-
     def _detect_loops(self, kf: dict) -> None:
-        if kf["des"] is None or len(self.keyframes) <= self.min_loop_gap:
+        if kf["des"] is None or kf["id"] <= self.min_loop_gap:
             return
-        # Candidate earlier keyframes: spatially near, far enough back in time.
         cands = [
             old for old in self.keyframes
-            if kf["id"] - old["id"] >= self.min_loop_gap
+            if old["id"] < kf["id"]
+            and kf["id"] - old["id"] >= self.min_loop_gap
             and old["X3d"] is not None
             and np.linalg.norm(old["pos"] - kf["pos"]) < self.loop_radius
         ]
         cands.sort(key=lambda o: np.linalg.norm(o["pos"] - kf["pos"]))
 
-        for old in cands[:3]:  # verify the few nearest candidates
+        for old in cands[:3]:
             matches = good_matches(self._bf, old["des3d"], kf["des"])
             if len(matches) < self.min_loop_inliers:
                 continue
             obj = np.array([old["X3d"][m.queryIdx] for m in matches])
-            img = np.array([kf["kp"][m.trainIdx].pt for m in matches])
+            img = np.array([kf["kp_pts"][m.trainIdx] for m in matches])
             try:
                 R, t, inliers = estimate_pose_pnp(obj, img, self.K)
             except RuntimeError:
                 continue
             if inliers is None or len(inliers) < self.min_loop_inliers:
                 continue
-            # T_rel maps old frame -> current camera; edge measures curr in old frame.
             T_rel = np.eye(4)
             T_rel[:3, :3] = R
             T_rel[:3, 3] = t.ravel()
             z = pose_to_se2(np.linalg.inv(T_rel))
+
+            # Gate: reject loops implying an implausible correction (false match).
+            vo_rel = t2v(
+                np.linalg.inv(v2t(self.graph.nodes[old["id"]])) @ v2t(self.graph.nodes[kf["id"]])
+            )
+            if np.linalg.norm(np.array(z[:2]) - vo_rel[:2]) > self.max_correction:
+                continue
+
             self.graph.add_edge(old["id"], kf["id"], z, weight=self.loop_weight)
             self.loops.append((old["id"], kf["id"]))
-            return  # one good loop edge per keyframe is enough
+            return
 
-    def optimize(self) -> None:
-        self.graph.optimize()
+    def optimize(self, loss: str = "soft_l1", f_scale: float = 3.0) -> None:
+        self.graph.optimize(loss=loss, f_scale=f_scale)
         self.optimized_positions = self.graph.positions()
 
     def keyframe_frames(self) -> list[int]:
