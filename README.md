@@ -1,88 +1,116 @@
-# CarlaPerception — Self-Driving Visual Perception Stack
+# CarlaPerception — Visual Perception & SLAM for Self-Driving
 
-A camera-based self-driving perception system built and validated in the **CARLA** simulator:
-**visual odometry / SLAM + 3D object detection & tracking + semantic segmentation + a Gaussian-Splatting 3D reconstruction**, with a C++/CUDA core, a simulation-based validation testbed, and a live web demo.
+A from-scratch self-driving **visual-perception and geometry** stack: 2D perception
+(detection, tracking, segmentation) plus a full geometric pipeline — **monocular →
+stereo visual odometry → loop-closure SLAM** — evaluated on the KITTI odometry
+benchmark. Built in Python with a clean, tested, config-driven codebase.
 
-> **Research question:** Can a modern Gaussian-Splatting 3D map make camera-only ego-localization more
-> accurate and more robust to appearance change (rain, night, glare) than a classical feature-based map —
-> and what does each cost in latency for onboard use?
+> **Headline:** stereo SLAM on KITTI seq 00 — loop closure + pose-graph
+> optimization cut trajectory drift **62% (ATE 25 m → 9.5 m)** over a 3.7 km loop.
+
+![Loop-closure SLAM vs ground truth](docs/images/slam_loop_closure.png)
+
+*VO drifts (blue); loop-closure SLAM (orange) tracks ground truth (black).*
+
+---
+
+## Results
+
+| Capability | Result (KITTI seq 00) | Implementation |
+|---|---|---|
+| Monocular VO | RPE ≈ 0.26 m; **scale collapses** over the full loop | ORB + essential matrix |
+| **Stereo VO** | **metric scale; ATE ≈ 26 m (~0.7%)** | stereo depth + PnP |
+| **Loop-closure SLAM** | **ATE 25 m → 9.5 m (−62%)**, 7 loop closures | pose-graph optimization |
+| Object detection | vehicles + pedestrians, real-time | YOLO wrapper |
+| Semantic segmentation | per-pixel class map | DeepLabV3 wrapper |
+| Multi-object tracking | persistent IDs across frames | IoU tracker (unit-tested) |
+
+**Why the progression matters:** monocular VO can't recover real-world scale, so
+its trajectory collapses. Stereo fixes scale via the known camera baseline. Loop
+closure then removes the remaining drift by recognizing revisited places and
+globally optimizing the trajectory — the core of modern SLAM.
+
+| Monocular VO (scale collapse) | Stereo VO (metric) |
+|---|---|
+| ![mono](docs/images/monocular_vo.png) | ![stereo](docs/images/stereo_vo.png) |
 
 ---
 
 ## Architecture
 
 ```
-                          ┌──────────────────────────────┐
-                          │            CARLA              │
-                          │  RGB · depth · semseg · IMU   │
-                          │  GPS · 3D boxes · ego pose GT │
-                          └───────────────┬──────────────┘
-                                          │  carla_io (capture + GT export)
-                 ┌────────────────────────┼────────────────────────┐
-                 ▼                         ▼                         ▼
-      ┌───────────────────┐    ┌────────────────────┐    ┌────────────────────┐
-      │  GEOMETRY (C++)   │    │  PERCEPTION (Py)   │    │   NEURAL 3D (Py)   │
-      │  VO front-end     │    │  detection (YOLO)  │    │  Gaussian Splatting │
-      │  SLAM back-end    │    │  tracking          │    │  reconstruction     │
-      │  cam–IMU fusion   │    │  segmentation      │    │  relocalization     │
-      │  Ceres/GTSAM BA   │    │  mono depth        │    │                     │
-      └─────────┬─────────┘    └─────────┬──────────┘    └──────────┬─────────┘
-                └────────────────────────┼──────────────────────────┘
-                                         ▼
-                  ┌───────────────────────────────────────────────┐
-                  │  eval (ATE/RPE · mIoU · mAP · robustness)      │
-                  │  testbed (CARLA scenario suite in CI)          │
-                  │  serving (ONNX/TensorRT) · frontend (web demo) │
-                  └───────────────────────────────────────────────┘
+            ┌──────────── PERCEPTION (Python) ────────────┐
+ frames ──► │ detection (YOLO) · tracking (IoU) ·         │
+            │ segmentation (DeepLabV3) · PerceptionPipeline│
+            └─────────────────────────────────────────────┘
+            ┌──────────── GEOMETRY / SLAM ────────────────┐
+ stereo ──► │ monocular VO ─► stereo VO (metric, PnP)      │
+            │        └─► loop-closure pose-graph SLAM       │
+            └─────────────────────────────────────────────┘
+            ┌──────────── EVALUATION ─────────────────────┐
+            │ ATE / RPE · Umeyama alignment · KITTI loader │
+            │ trajectory plots vs ground truth            │
+            └─────────────────────────────────────────────┘
 ```
 
-## Repository layout
-
-| Path | Purpose |
+| Path | What it does |
 |---|---|
-| `core_cpp/` | C++ geometry + real-time path (VO, SLAM, fusion, calib) + pybind11 bindings |
-| `perception_py/` | PyTorch perception: detection, tracking, segmentation, depth |
-| `neural3d/` | Gaussian-Splatting reconstruction + relocalization |
-| `carla_io/` | CARLA client: sensor capture, scenario scripting, ground-truth export |
-| `eval/` | Metrics: ATE/RPE, mIoU, mAP, calibration, robustness slices |
-| `serving/` | ONNX/TensorRT export + real-time runner |
-| `testbed/` | CARLA scenario suite (weather × time × traffic) + CI hooks |
-| `frontend/` | Live web demo (dashboard + 3D viewer) |
-| `configs/` | Hydra config tree |
-| `pipelines/`, `infra/` | DVC pipelines, Dockerfiles, RunPod scripts |
+| `perception_py/carla_perception/detection` | object detection wrapper |
+| `…/segmentation`, `…/tracking` | semantic segmentation, multi-object tracking |
+| `…/pipeline.py` | combined per-frame perception |
+| `…/vo/monocular_vo.py`, `…/vo/stereo_vo.py` | visual odometry (mono + stereo/metric) |
+| `…/slam/pose_graph.py`, `…/slam/stereo_slam.py` | SE2 pose-graph optimizer + loop closure |
+| `…/datasets/kitti.py`, `…/trajectory.py`, `…/metrics.py` | KITTI loader, alignment, ATE/RPE/IoU |
+| `scripts/` | runnable demos + KITTI evaluation scripts |
+
+---
 
 ## Quickstart
 
 ```bash
-# 1. Install base + dev tooling
-make setup
-pre-commit install
+python -m venv .venv && source .venv/bin/activate
+pip install -e ".[dev,ml]"          # base + dev + deep-learning extras
+python -m pytest                    # 21 tests
 
-# 2. (when ready) deep-learning + 3D extras
-make setup-ml
-make setup-3d
+# Perception demos (download a sample image automatically)
+python scripts/demo_perception.py   # detection + segmentation in one pass
+python scripts/demo_tracking.py     # tracking over a frame sequence
 
-# 3. Install CARLA — see docs/SETUP_CARLA.md, then record a dataset
-make record
-
-# 4. Sanity checks
-make lint && make test
+# Geometry on KITTI (see docs/SETUP_KITTI.md to get the data)
+python scripts/run_stereo_vo_kitti.py --root <kitti> --sequence 00
+python scripts/run_slam_kitti.py     --root <kitti> --sequence 00 --stride 20 \
+    --loop-weight 4 --f-scale 1.5 --min-inliers 40
 ```
 
-## Status — Phase 0 (foundation)
+> Tip: the SLAM script caches the slow VO/feature pass, so re-running to tune
+> loop-closure parameters takes seconds.
 
-- [x] Monorepo scaffold, git + DVC initialized
-- [x] Build/config/CI skeleton (pyproject, CMake, Hydra, GitHub Actions, pre-commit)
-- [x] CARLA setup guide + recording-script stub
-- [ ] Phase 1 — perception MVP (detection + tracking + segmentation)
+---
 
-See `../Computer Vision AI/PROJECT_ROADMAP.md` for the full plan and phased milestones.
+## Engineering
 
-## Tech stack
+- **Tested:** 21 unit tests, including synthetic-geometry tests that verify VO
+  pose recovery, stereo metric scale, trajectory alignment, and loop closure —
+  all without needing image data, so they run in CI.
+- **Tooling:** Hydra configs, DVC, ruff + mypy, pre-commit, GitHub Actions CI.
+- **Performance:** pose-graph optimization uses a robust loss + a **sparse
+  Jacobian**, turning the solve from minutes to seconds.
 
-C++17 · Python 3.10+ · CUDA · CMake/pybind11 · OpenCV · Eigen · Ceres/GTSAM ·
-PyTorch · Ultralytics YOLO · gsplat · Open3D · Rerun · CARLA · ONNX/TensorRT ·
-DVC · Weights & Biases · Hydra · Docker · GitHub Actions.
+### Notable problems solved
+- **SE2 coordinate-frame handedness** — KITTI's downward Y axis flips planar yaw;
+  getting this wrong made loop closure diverge.
+- **Odometry/graph consistency** — deriving edges from projected node poses so
+  only loop closures drive the correction.
+- **Optimizer scalability** — sparse-Jacobian finite differences for fast solves.
+
+---
+
+## Roadmap
+
+Done: perception stack · monocular/stereo VO · KITTI evaluation · loop-closure SLAM.
+Next: interactive web demo · dense 3D / Gaussian-Splatting reconstruction · CARLA
+multi-sensor capture · ONNX/TensorRT edge optimization · C++ geometry core (g2o/GTSAM).
+See `STATUS.md` for the full breakdown.
 
 ## License
 
