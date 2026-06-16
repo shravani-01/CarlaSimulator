@@ -21,6 +21,7 @@ benchmark. Built in Python with a clean, tested, config-driven codebase.
 | Monocular VO | RPE ≈ 0.26 m; **scale collapses** over the full loop | ORB + essential matrix |
 | **Stereo VO** | **metric scale; ATE ≈ 26 m (~0.7%)** | stereo depth + PnP |
 | **Loop-closure SLAM** | **ATE 25 m → 9.5 m (−62%)**, 7 loop closures | pose-graph optimization |
+| Loop-closure SLAM (seq 05) | **ATE 8.6 m → 5.8 m (−33%)**, same params | generalizes, no per-seq tuning |
 | Object detection | vehicles + pedestrians, real-time | YOLO wrapper |
 | Semantic segmentation | per-pixel class map | DeepLabV3 wrapper |
 | Multi-object tracking | persistent IDs across frames | IoU tracker (unit-tested) |
