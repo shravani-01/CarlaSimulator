@@ -60,6 +60,51 @@ def estimate_pose_pnp(
     return R, tvec, inliers
 
 
+def good_matches(bf, des1, des2, ratio: float = 0.75):
+    """k-NN match + Lowe ratio test; returns the list of confident DMatches."""
+    if des1 is None or des2 is None:
+        return []
+    knn = bf.knnMatch(des1, des2, k=2)
+    return [
+        m for pair in knn if len(pair) == 2
+        for m, n in [pair] if m.distance < ratio * n.distance
+    ]
+
+
+def compute_stereo_points(left, right, K, baseline, orb, bf, ratio=0.75, max_row_diff=2.0):
+    """Detect left features, match them in the right image, triangulate metric 3D.
+
+    Returns (kpL, desL, des3d, X3d): all left keypoints/descriptors, plus the
+    aligned descriptors and metric 3D points for the subset that got valid depth.
+    Shared by StereoVO and the SLAM pipeline.
+    """
+    gl = cv2.cvtColor(left, cv2.COLOR_BGR2GRAY) if left.ndim == 3 else left
+    gr = cv2.cvtColor(right, cv2.COLOR_BGR2GRAY) if right.ndim == 3 else right
+    kpL, desL = orb.detectAndCompute(gl, None)
+    kpR, desR = orb.detectAndCompute(gr, None)
+    if desL is None or desR is None:
+        return kpL, desL, None, None
+
+    fx, fy = K[0, 0], K[1, 1]
+    cx, cy = K[0, 2], K[1, 2]
+    des3d, X3d = [], []
+    for m in good_matches(bf, desL, desR, ratio):
+        xl, yl = kpL[m.queryIdx].pt
+        xr, yr = kpR[m.trainIdx].pt
+        disp = xl - xr
+        if abs(yl - yr) > max_row_diff or disp <= 1e-6:
+            continue
+        Z = fx * baseline / disp
+        X = (xl - cx) * Z / fx
+        Y = (yl - cy) * Z / fy
+        des3d.append(desL[m.queryIdx])
+        X3d.append([X, Y, Z])
+
+    if not X3d:
+        return kpL, desL, None, None
+    return kpL, desL, np.array(des3d, dtype=np.uint8), np.array(X3d, dtype=np.float64)
+
+
 @dataclass
 class StereoVO:
     """Feature-based stereo visual odometry with metric scale.
@@ -91,38 +136,14 @@ class StereoVO:
         self._prev_X = None      # corresponding metric 3D points (prev frame)
 
     def _good(self, des1, des2):
-        knn = self._bf.knnMatch(des1, des2, k=2)
-        return [m for pair in knn if len(pair) == 2 for m, n in [pair]
-                if m.distance < self.ratio * n.distance]
+        return good_matches(self._bf, des1, des2, self.ratio)
 
     def _stereo_points(self, left, right):
         """Triangulate metric 3D points for left features matched in the right image."""
-        gl = cv2.cvtColor(left, cv2.COLOR_BGR2GRAY) if left.ndim == 3 else left
-        gr = cv2.cvtColor(right, cv2.COLOR_BGR2GRAY) if right.ndim == 3 else right
-        kpL, desL = self._orb.detectAndCompute(gl, None)
-        kpR, desR = self._orb.detectAndCompute(gr, None)
-        if desL is None or desR is None:
-            return None, None, None, None
-
-        fx, fy = self.K[0, 0], self.K[1, 1]
-        cx, cy = self.K[0, 2], self.K[1, 2]
-
-        des3d, X3d = [], []
-        for m in self._good(desL, desR):
-            xl, yl = kpL[m.queryIdx].pt
-            xr, yr = kpR[m.trainIdx].pt
-            disp = xl - xr
-            if abs(yl - yr) > self.max_row_diff or disp <= 1e-6:
-                continue
-            Z = fx * self.baseline / disp
-            X = (xl - cx) * Z / fx
-            Y = (yl - cy) * Z / fy
-            des3d.append(desL[m.queryIdx])
-            X3d.append([X, Y, Z])
-
-        if not X3d:
-            return kpL, desL, None, None
-        return kpL, desL, np.array(des3d, dtype=np.uint8), np.array(X3d, dtype=np.float64)
+        return compute_stereo_points(
+            left, right, self.K, self.baseline, self._orb, self._bf,
+            self.ratio, self.max_row_diff,
+        )
 
     def process(self, left: NDArray[np.uint8], right: NDArray[np.uint8]) -> NDArray[np.float64]:
         """Process one stereo pair; return the current camera position (3,)."""
