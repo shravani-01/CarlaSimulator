@@ -24,6 +24,7 @@ benchmark. Built in Python with a clean, tested, config-driven codebase.
 | Loop-closure SLAM (seq 05) | **ATE 8.6 m → 5.8 m (−33%)**, same params | generalizes, no per-seq tuning |
 | Object detection | vehicles + pedestrians, real-time | YOLO wrapper |
 | Semantic segmentation | per-pixel class map | DeepLabV3 wrapper |
+| **Dense 3D reconstruction** | colored point-cloud map (~440K points) | SGBM stereo + pose fusion |
 | Multi-object tracking | persistent IDs across frames | IoU tracker (unit-tested) |
 
 **Why the progression matters:** monocular VO can't recover real-world scale, so
@@ -81,6 +82,12 @@ python scripts/demo_tracking.py     # tracking over a frame sequence
 python scripts/run_stereo_vo_kitti.py --root <kitti> --sequence 00
 python scripts/run_slam_kitti.py     --root <kitti> --sequence 00 --stride 20 \
     --loop-weight 4 --f-scale 1.5 --min-inliers 40
+
+# Dense 3D reconstruction -> colored point cloud (.ply) + top-down preview
+python scripts/run_reconstruct_kitti.py --root <kitti> --sequence 00 --max-frames 400
+
+# Interactive web demo
+streamlit run frontend/app.py
 ```
 
 > Tip: the SLAM script caches the slow VO/feature pass, so re-running to tune
