@@ -9,11 +9,11 @@ But it left me with a nagging question: I could tell *what* was in a frame, yet 
 The result: a self-driving perception + SLAM stack, tested on the KITTI benchmark.
 
 The journey, in one line each:
-→ Monocular visual odometry - works, but drifts and can't recover real-world scale
-→ Stereo - fixes scale using the two-camera baseline (metric trajectory)
-→ Loop-closure SLAM - recognizes revisited places and cut trajectory drift 62% (25 m → 9.5 m over a 3.7 km loop)
-→ Gaussian Splatting - reconstructed the street in photorealistic 3D, feeding in my *own* camera poses and skipping the usual COLMAP step
-→ CARLA - generated my own driving data in simulation and validated the whole pipeline against perfect ground truth (0.59 m error)
+-> Monocular visual odometry - works, but drifts and can't recover real-world scale
+-> Stereo - fixes scale using the two-camera baseline (metric trajectory)
+-> Loop-closure SLAM - recognizes revisited places and cut trajectory drift 62% (25 m -> 9.5 m over a 3.7 km loop)
+-> Gaussian Splatting - reconstructed the street in photorealistic 3D, feeding in my *own* camera poses and skipping the usual COLMAP step
+-> CARLA - generated my own driving data in simulation and validated the whole pipeline against perfect ground truth (0.59 m error)
 
 The honest part: there's plenty I'd still improve - it's a planar pose graph in Python, not production 6-DOF C++. But I understand every line, and debugging a flipped coordinate frame at 1am taught me more than any course could.
 

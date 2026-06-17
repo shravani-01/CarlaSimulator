@@ -1,12 +1,12 @@
 # CarlaPerception - Visual Perception & SLAM for Self-Driving
 
 A from-scratch self-driving **visual-perception and geometry** stack: 2D perception
-(detection, tracking, segmentation) plus a full geometric pipeline - **monocular →
-stereo visual odometry → loop-closure SLAM** - evaluated on the KITTI odometry
+(detection, tracking, segmentation) plus a full geometric pipeline - **monocular ->
+stereo visual odometry -> loop-closure SLAM** - evaluated on the KITTI odometry
 benchmark. Built in Python with a clean, tested, config-driven codebase.
 
 > **Headline:** stereo SLAM on KITTI seq 00 - loop closure + pose-graph
-> optimization cut trajectory drift **62% (ATE 25 m → 9.5 m)** over a 3.7 km loop.
+> optimization cut trajectory drift **62% (ATE 25 m -> 9.5 m)** over a 3.7 km loop.
 
 ![Loop-closure SLAM vs ground truth](docs/images/slam_loop_closure.png)
 
@@ -20,14 +20,14 @@ benchmark. Built in Python with a clean, tested, config-driven codebase.
 |---|---|---|
 | Monocular VO | RPE ≈ 0.26 m; **scale collapses** over the full loop | ORB + essential matrix |
 | **Stereo VO** | **metric scale; ATE ≈ 26 m (~0.7%)** | stereo depth + PnP |
-| **Loop-closure SLAM** | **ATE 25 m → 9.5 m (−62%)**, 7 loop closures | pose-graph optimization |
-| Loop-closure SLAM (seq 05) | **ATE 8.6 m → 5.8 m (−33%)**, same params | generalizes, no per-seq tuning |
+| **Loop-closure SLAM** | **ATE 25 m -> 9.5 m (-62%)**, 7 loop closures | pose-graph optimization |
+| Loop-closure SLAM (seq 05) | **ATE 8.6 m -> 5.8 m (-33%)**, same params | generalizes, no per-seq tuning |
 | Object detection | vehicles + pedestrians, real-time | YOLO wrapper |
 | Semantic segmentation | per-pixel class map | DeepLabV3 wrapper |
 | **Dense 3D reconstruction** | colored point-cloud map (~440K points) | SGBM stereo + pose fusion |
 | Multi-object tracking | persistent IDs across frames | IoU tracker (unit-tested) |
 | **Neural 3D (Gaussian Splatting)** | photorealistic novel-view flythrough, **COLMAP-free** | splatfacto on *our* stereo-VO poses |
-| **CARLA self-recorded drive** | stereo VO **ATE ≈ 0.59 m** vs *perfect* ground truth | synchronized capture → same pipeline |
+| **CARLA self-recorded drive** | stereo VO **ATE ≈ 0.59 m** vs *perfect* ground truth | synchronized capture -> same pipeline |
 
 **Why the progression matters:** monocular VO can't recover real-world scale, so
 its trajectory collapses. Stereo fixes scale via the known camera baseline. Loop
@@ -75,7 +75,7 @@ ground truth:
 ![CARLA stereo VO vs ground truth](docs/images/carla_stereo_vo.png)
 
 **Stereo VO ATE ≈ 0.59 m, RPE ≈ 0.02 m, scale ≈ 1.01** - sub-metre, with the
-near-1.0 alignment scale confirming the Unreal→OpenCV coordinate conversion is
+near-1.0 alignment scale confirming the Unreal->OpenCV coordinate conversion is
 correct (a mirrored frame would blow ATE up). Because the ground truth is exact,
 this isolates and **validates the VO algorithm itself** - any residual error is the
 method's, not sensor noise. The capture is also scriptable (routes, traffic,
@@ -104,11 +104,11 @@ Gaussian-Splatting reconstruction. Runbook: [`docs/SETUP_CARLA.md`](docs/SETUP_C
 | Path | What it does |
 |---|---|
 | `perception_py/carla_perception/detection` | object detection wrapper |
-| `…/segmentation`, `…/tracking` | semantic segmentation, multi-object tracking |
-| `…/pipeline.py` | combined per-frame perception |
-| `…/vo/monocular_vo.py`, `…/vo/stereo_vo.py` | visual odometry (mono + stereo/metric) |
-| `…/slam/pose_graph.py`, `…/slam/stereo_slam.py` | SE2 pose-graph optimizer + loop closure |
-| `…/datasets/kitti.py`, `…/trajectory.py`, `…/metrics.py` | KITTI loader, alignment, ATE/RPE/IoU |
+| `.../segmentation`, `.../tracking` | semantic segmentation, multi-object tracking |
+| `.../pipeline.py` | combined per-frame perception |
+| `.../vo/monocular_vo.py`, `.../vo/stereo_vo.py` | visual odometry (mono + stereo/metric) |
+| `.../slam/pose_graph.py`, `.../slam/stereo_slam.py` | SE2 pose-graph optimizer + loop closure |
+| `.../datasets/kitti.py`, `.../trajectory.py`, `.../metrics.py` | KITTI loader, alignment, ATE/RPE/IoU |
 | `scripts/` | runnable demos + KITTI evaluation scripts |
 
 ---
@@ -118,7 +118,7 @@ Gaussian-Splatting reconstruction. Runbook: [`docs/SETUP_CARLA.md`](docs/SETUP_C
 ```bash
 python -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev,ml]"          # base + dev + deep-learning extras
-python -m pytest                    # 28 tests
+python -m pytest                    # 35 tests
 
 # Perception demos (download a sample image automatically)
 python scripts/demo_perception.py   # detection + segmentation in one pass
@@ -143,7 +143,7 @@ streamlit run frontend/app.py
 
 ## Engineering
 
-- **Tested:** 28 unit tests, including synthetic-geometry tests that verify VO
+- **Tested:** 35 unit tests, including synthetic-geometry tests that verify VO
   pose recovery, stereo metric scale, trajectory alignment, and loop closure -
   all without needing image data, so they run in CI.
 - **Tooling:** Hydra configs, DVC, ruff + mypy, pre-commit, GitHub Actions CI.

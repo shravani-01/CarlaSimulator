@@ -51,7 +51,7 @@ Use RunPod's file upload, or `runpodctl`, or `scp`. Put it at e.g.
 > **TCP port 9009**, which many campus/corporate firewalls block (`i/o timeout`
 > connecting to `relay*.runpod.net`). If that happens, transfer over HTTPS
 > instead: on the pod run `cd /workspace && python3 -m http.server 8888`, then
-> open the pod's **Connect → HTTP Service :8888** proxy URL in your browser and
+> open the pod's **Connect -> HTTP Service :8888** proxy URL in your browser and
 > download/upload through it - that traffic rides port 443 and clears most
 > firewalls. No `unzip` on the pod? Use `python3 -m zipfile -e file.zip dest/`.
 
@@ -96,11 +96,11 @@ the README/LinkedIn post.
 
 ## Troubleshooting
 
-- **Scene looks "inside-out" / mirrored** → pose convention. Re-export with
+- **Scene looks "inside-out" / mirrored** -> pose convention. Re-export with
   `--convention opencv` and retrain.
-- **Blurry / streaky** → forward-only driving gives weak parallax; use a segment
+- **Blurry / streaky** -> forward-only driving gives weak parallax; use a segment
   with turns, more frames, or a shorter span.
-- **OOM** → fewer images (`--max-frames`), or a bigger GPU.
+- **OOM** -> fewer images (`--max-frames`), or a bigger GPU.
 
 ## Optional: the research angle
 

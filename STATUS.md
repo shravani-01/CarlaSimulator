@@ -1,6 +1,6 @@
 # Project Status - CarlaPerception
 
-_A self-driving visual-perception stack: perception (detection/segmentation/tracking) + geometry (VO → stereo VO → loop-closure SLAM), built from scratch and validated on KITTI._
+_A self-driving visual-perception stack: perception (detection/segmentation/tracking) + geometry (VO -> stereo VO -> loop-closure SLAM), built from scratch and validated on KITTI._
 
 **Last updated:** 2026-06 · **Tests:** 35 passing · **Status:** perception + geometry + neural-3D + CARLA capture complete & working
 
@@ -15,14 +15,14 @@ _A self-driving visual-perception stack: perception (detection/segmentation/trac
 | Multi-object tracking | persistent IDs across frames | our IoU tracker (unit-tested) |
 | Monocular VO (KITTI 00) | RPE ≈ 0.26 m; scale **collapses** | shows the monocular scale problem |
 | **Stereo VO (KITTI 00)** | **metric scale; ATE ≈ 26 m / ~0.7% over 3.7 km** | PnP + stereo depth |
-| **Loop-closure SLAM (KITTI 00)** | **ATE 25 m → 9.5 m (−62%)** | 7 loops, pose-graph optimization |
+| **Loop-closure SLAM (KITTI 00)** | **ATE 25 m -> 9.5 m (-62%)** | 7 loops, pose-graph optimization |
 | Dense 3D reconstruction | colored point cloud (~440K pts) | SGBM stereo + pose fusion |
 | **Gaussian Splatting (KITTI 00)** | **641K-Gaussian splat + flythrough, COLMAP-free** | splatfacto on our stereo-VO poses |
-| **CARLA self-recorded drive** | stereo VO **ATE ≈ 0.59 m** vs perfect GT | own synchronized stereo capture → same pipeline |
+| **CARLA self-recorded drive** | stereo VO **ATE ≈ 0.59 m** vs perfect GT | own synchronized stereo capture -> same pipeline |
 
 **Portfolio one-liners:**
-- _"Stereo SLAM on KITTI seq 00 - loop closure + pose-graph optimization cut trajectory drift 62% (ATE 25 m → 9.5 m)."_
-- _"Built monocular → stereo VO with metric scale and ATE/RPE evaluation; debugged SE2 coordinate-frame and Jacobian-sparsity issues to make loop closure work and run fast."_
+- _"Stereo SLAM on KITTI seq 00 - loop closure + pose-graph optimization cut trajectory drift 62% (ATE 25 m -> 9.5 m)."_
+- _"Built monocular -> stereo VO with metric scale and ATE/RPE evaluation; debugged SE2 coordinate-frame and Jacobian-sparsity issues to make loop closure work and run fast."_
 - _"Reconstructed a photorealistic Gaussian-Splatting map of a KITTI street by feeding my own stereo-VO camera poses into nerfstudio - skipping COLMAP entirely."_
 - _"Built a CARLA capture pipeline (synchronized stereo + ground-truth poses, KITTI format) and validated my stereo VO to ~0.59 m ATE against the simulator's perfect ground truth."_
 
@@ -39,7 +39,7 @@ _A self-driving visual-perception stack: perception (detection/segmentation/trac
 - `detection/` - YOLO `Detector` wrapper + demo
 - `segmentation/` - DeepLabV3 `Segmenter` wrapper + demo
 - `tracking/` - `IoUTracker` with persistent IDs + **unit tests** + video demo
-- `pipeline.py` - combined `PerceptionPipeline(process → render)` + demo
+- `pipeline.py` - combined `PerceptionPipeline(process -> render)` + demo
 - `metrics.py` - ATE, RPE, mean-IoU + **unit tests**
 
 **Phase 2 - Geometry / VO**
@@ -66,7 +66,7 @@ _A self-driving visual-perception stack: perception (detection/segmentation/trac
 - Write the LinkedIn/blog post around the SLAM before/after plot
 
 **B. Live demo (the LinkedIn centerpiece)**
-- `frontend/` web app: load a clip → live detection + segmentation + trajectory + 3D view (Rerun/Streamlit). Fast to iterate, big visual payoff.
+- `frontend/` web app: load a clip -> live detection + segmentation + trajectory + 3D view (Rerun/Streamlit). Fast to iterate, big visual payoff.
 
 **C. Dense 3D / neural reconstruction (the "original contribution")** - ✅ done
 - ✅ Stereo point-cloud / dense reconstruction from the keyframes
@@ -76,7 +76,7 @@ _A self-driving visual-perception stack: perception (detection/segmentation/trac
 **D. The CARLA spine (the project's namesake)** - ✅ done
 - ✅ Implemented the real `carla_io/record_dataset.py`: synchronous stereo capture +
   GT poses, writing **KITTI-format** data so the whole pipeline reuses it unchanged
-- ✅ `carla_io/coords.py` (Unreal→OpenCV conversion) + `kitti_writer.py`, both unit-tested
+- ✅ `carla_io/coords.py` (Unreal->OpenCV conversion) + `kitti_writer.py`, both unit-tested
 - ✅ RunPod runbook in `docs/SETUP_CARLA.md`
 - ✅ Recorded a 1000-frame Town10 drive on a CARLA GPU pod; stereo VO scored
   **ATE ≈ 0.59 m** vs perfect ground truth (validates the algorithm itself)

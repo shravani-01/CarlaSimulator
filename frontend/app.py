@@ -32,12 +32,12 @@ IMAGES_DIR = Path("docs/images")
 OUTPUTS_DIR = Path("outputs/demo")
 
 
-@st.cache_resource(show_spinner="Loading perception models…")
+@st.cache_resource(show_spinner="Loading perception models...")
 def get_pipeline(device: str | None) -> PerceptionPipeline:
     return PerceptionPipeline(device=device)
 
 
-@st.cache_resource(show_spinner="Indexing KITTI sequence…")
+@st.cache_resource(show_spinner="Indexing KITTI sequence...")
 def get_kitti(root: str, seq: str) -> KITTIOdometry:
     return KITTIOdometry(root, seq)
 
@@ -140,7 +140,7 @@ with tab_perc:
         st.info("Pick an image source above.")
     elif st.button("Run perception", type="primary"):
         pipe = get_pipeline(device)
-        with st.spinner("Running detection + segmentation…"):
+        with st.spinner("Running detection + segmentation..."):
             result = pipe.process(image)
             vis = pipe.render(image, result)
         c1, c2 = st.columns(2)
@@ -155,7 +155,7 @@ with tab_perc:
 
 # ---------------------------------------------------------------- tracking video
 with tab_track:
-    st.subheader("Detection + tracking over a clip → annotated video")
+    st.subheader("Detection + tracking over a clip -> annotated video")
     st.caption("Each object keeps a stable `id:` as it moves - that's tracking.")
     tsrc = st.radio("Source", ["KITTI clip", "Upload video"], horizontal=True, key="tsrc")
     seg_overlay = st.checkbox("Also overlay segmentation (slower)", value=False)
@@ -203,7 +203,7 @@ with tab_track:
         tracker = IoUTracker()
         use_fcw = fcw and len(right_in) == len(frames_in) and Kmat is not None
         annotated = []
-        bar = st.progress(0.0, text="Running detection + tracking…")
+        bar = st.progress(0.0, text="Running detection + tracking...")
         for i, fr in enumerate(frames_in):
             tracks = tracker.update(pipe.detector.detect(fr))
             base = fr
@@ -226,7 +226,7 @@ with tab_track:
 
 # ---------------------------------------------------------------- slam
 with tab_slam:
-    st.subheader("Visual odometry → loop-closure SLAM (KITTI)")
+    st.subheader("Visual odometry -> loop-closure SLAM (KITTI)")
     st.markdown(
         "Monocular VO drifts and loses scale; **stereo** recovers metric scale; "
         "**loop closure** removes the remaining drift."
@@ -254,7 +254,7 @@ with tab_slam:
         |---|---|
         | Monocular VO | scale collapses; ATE ~185 m |
         | Stereo VO | metric; **ATE ~26 m (~0.7%)** |
-        | Loop-closure SLAM | **ATE 25 → 9.5 m (−62%)** |
-        | SLAM on seq 05 | **8.6 → 5.8 m (−33%)**, same params |
+        | Loop-closure SLAM | **ATE 25 -> 9.5 m (-62%)** |
+        | SLAM on seq 05 | **8.6 -> 5.8 m (-33%)**, same params |
         """
     )

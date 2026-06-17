@@ -130,13 +130,13 @@ git commit -m "Track CARLA recording with DVC"
 
 ## Troubleshooting
 
-- **`RuntimeError: time-out ... version mismatch`** → the `carla` pip version
+- **`RuntimeError: time-out ... version mismatch`** -> the `carla` pip version
   doesn't match the server. Install the exact same version (`carla==0.9.15`).
-- **Server exits / black frames** → missing `-RenderOffScreen`, or too little
+- **Server exits / black frames** -> missing `-RenderOffScreen`, or too little
   VRAM. Use a bigger GPU or a lighter town (`Town01`, `Town02`).
-- **Frames/poses look mirrored** → coordinate convention; `carla_io/coords.py` +
+- **Frames/poses look mirrored** -> coordinate convention; `carla_io/coords.py` +
   `tests/test_carla_coords.py` exist to prevent exactly this. Run the tests if you
   touch that code.
-- **Capture hangs** → a sensor frame was dropped; we match frames by id, so a stall
+- **Capture hangs** -> a sensor frame was dropped; we match frames by id, so a stall
   usually means the server fell out of sync - restart the server.
-- **Low FPS** → reduce camera resolution and `num_vehicles` in the data config.
+- **Low FPS** -> reduce camera resolution and `num_vehicles` in the data config.

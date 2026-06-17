@@ -64,7 +64,7 @@ before, and use that as a constraint to correct the whole trajectory. I built a
 odometry, plus loop-closure edges between revisited places) - and optimized all
 poses to satisfy every constraint at once.
 
-The first run made things **worse** (ATE 25 m → 29 m). The second run, worse
+The first run made things **worse** (ATE 25 m -> 29 m). The second run, worse
 still. Loop closure that *increases* error means the constraints are wrong, and
 chasing that down was the real work:
 
@@ -87,7 +87,7 @@ chasing that down was the real work:
 With those fixed, and a little parameter tuning (trust good loops, reject outliers
 hard), loop closure finally did its job:
 
-**ATE 25 m → 9.5 m - a 62% reduction in drift.**
+**ATE 25 m -> 9.5 m - a 62% reduction in drift.**
 
 ![Loop-closure SLAM](images/slam_loop_closure.png)
 
@@ -95,7 +95,7 @@ The orange (SLAM) path sits almost on top of the black ground truth; the blue
 (VO-only) path bows away from it. The loops are closed.
 
 And it isn't overfit to one route: running the *same parameters* on KITTI seq 05
-(a different drive) reduced drift from 8.6 m to 5.8 m (−33%). The pipeline
+(a different drive) reduced drift from 8.6 m to 5.8 m (-33%). The pipeline
 generalizes.
 
 ## Step 4 - From localization to mapping: Gaussian Splatting without COLMAP
