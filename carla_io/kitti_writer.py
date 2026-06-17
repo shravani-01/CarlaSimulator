@@ -33,7 +33,9 @@ class KittiSequenceWriter:
         self.seq_dir = self.root / "sequences" / sequence
         self.left_dir = self.seq_dir / "image_0"
         self.right_dir = self.seq_dir / "image_1"
-        for d in (self.left_dir, self.right_dir, self.root / "poses"):
+        # Optional ground-truth depth (16-bit PNG, centimetres) aligned to image_0.
+        self.depth_dir = self.seq_dir / "depth"
+        for d in (self.left_dir, self.right_dir, self.depth_dir, self.root / "poses"):
             d.mkdir(parents=True, exist_ok=True)
         self._n = 0
         self._poses: list[NDArray] = []
@@ -59,13 +61,22 @@ class KittiSequenceWriter:
         right_bgr: NDArray[np.uint8],
         pose_c2w: NDArray,
         timestamp: float,
+        depth_m: NDArray[np.floating] | None = None,
     ) -> None:
-        """Save one stereo pair + its ground-truth camera-to-world pose."""
+        """Save one stereo pair + its GT pose, and (optionally) a metric depth map.
+
+        ``depth_m`` is a HxW float array of metres aligned to the LEFT image; it's
+        stored as a 16-bit PNG in centimetres under ``depth/`` (see carla_io.depth).
+        """
         import cv2
+
+        from carla_io.depth import meters_to_uint16_cm
 
         name = f"{self._n:06d}.png"
         cv2.imwrite(str(self.left_dir / name), left_bgr)
         cv2.imwrite(str(self.right_dir / name), right_bgr)
+        if depth_m is not None:
+            cv2.imwrite(str(self.depth_dir / name), meters_to_uint16_cm(depth_m))
         self._poses.append(np.asarray(pose_c2w, dtype=np.float64))
         self._times.append(float(timestamp))
         self._n += 1

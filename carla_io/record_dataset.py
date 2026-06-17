@@ -30,6 +30,7 @@ from pathlib import Path
 import numpy as np
 
 from carla_io.coords import fov_to_intrinsics, ue_matrix_to_opencv_c2w
+from carla_io.depth import carla_depth_to_meters
 from carla_io.kitti_writer import KittiSequenceWriter
 
 try:
@@ -48,26 +49,41 @@ def _carla_image_to_bgr(image) -> np.ndarray:
     return arr[:, :, :3].copy()
 
 
-def _spawn_stereo_cameras(world, blueprint_lib, ego, cfg, baseline: float):
+def _spawn_stereo_cameras(world, blueprint_lib, ego, cfg, baseline: float, want_depth: bool):
     """Attach a left + right RGB camera to the ego vehicle, ``baseline`` apart.
 
     In the camera's local (Unreal) frame +Y is *right*, so the right camera is the
     left camera shifted by ``+baseline`` along Y. Both look forward (+X).
+
+    If ``want_depth`` is set, a depth camera is co-located with the LEFT camera
+    (identical pose + intrinsics) so its depth map aligns pixel-for-pixel with the
+    left image - those become the ground-truth labels for monocular-depth training.
+
+    Returns ``(left, right, depth_or_None)``.
     """
     import carla
 
     rgb = cfg.data.sensors.rgb
     cam_bp = blueprint_lib.find("sensor.camera.rgb")
-    cam_bp.set_attribute("image_size_x", str(rgb.width))
-    cam_bp.set_attribute("image_size_y", str(rgb.height))
-    cam_bp.set_attribute("fov", str(rgb.fov))
+    for bp_ in (cam_bp,):
+        bp_.set_attribute("image_size_x", str(rgb.width))
+        bp_.set_attribute("image_size_y", str(rgb.height))
+        bp_.set_attribute("fov", str(rgb.fov))
 
     # Mount roughly at windshield height, looking ahead.
     left_tf = carla.Transform(carla.Location(x=1.5, y=0.0, z=1.6))
     right_tf = carla.Transform(carla.Location(x=1.5, y=baseline, z=1.6))
     left = world.spawn_actor(cam_bp, left_tf, attach_to=ego)
     right = world.spawn_actor(cam_bp, right_tf, attach_to=ego)
-    return left, right
+
+    depth = None
+    if want_depth:
+        depth_bp = blueprint_lib.find("sensor.camera.depth")
+        depth_bp.set_attribute("image_size_x", str(rgb.width))
+        depth_bp.set_attribute("image_size_y", str(rgb.height))
+        depth_bp.set_attribute("fov", str(rgb.fov))
+        depth = world.spawn_actor(depth_bp, left_tf, attach_to=ego)
+    return left, right, depth
 
 
 def _spawn_traffic(world, blueprint_lib, tm, cfg) -> list:
@@ -132,14 +148,18 @@ def record(cfg: DictConfig) -> None:
         actors.append(ego)
         actors += _spawn_traffic(world, bp, tm, cfg)
 
-        left, right = _spawn_stereo_cameras(world, bp, ego, cfg, baseline)
-        actors += [left, right]
+        want_depth = bool(cfg.data.sensors.get("depth", False))
+        left, right, depth_cam = _spawn_stereo_cameras(world, bp, ego, cfg, baseline, want_depth)
+        actors += [c for c in (left, right, depth_cam) if c is not None]
 
         # Sensor callbacks push into queues; we pair them by frame id each tick.
         lq: queue.Queue = queue.Queue()
         rq: queue.Queue = queue.Queue()
+        dq: queue.Queue = queue.Queue()
         left.listen(lq.put)
         right.listen(rq.put)
+        if depth_cam is not None:
+            depth_cam.listen(dq.put)
 
         K = fov_to_intrinsics(
             int(cfg.data.sensors.rgb.width),
@@ -161,6 +181,8 @@ def record(cfg: DictConfig) -> None:
             world.tick()
             lq.get(timeout=10.0)
             rq.get(timeout=10.0)
+            if depth_cam is not None:
+                dq.get(timeout=10.0)
 
         for i in range(num_frames):
             snap = world.tick()
@@ -169,11 +191,20 @@ def record(cfg: DictConfig) -> None:
             # Ground-truth pose = the LEFT camera's world transform, converted to
             # our OpenCV/KITTI convention.
             c2w = ue_matrix_to_opencv_c2w(np.array(left.get_transform().get_matrix()))
+            depth_m = None
+            if depth_cam is not None:
+                dimg = _grab(dq, snap)
+                # CARLA delivers depth as a BGRA buffer; decode to metric metres.
+                draw = np.frombuffer(dimg.raw_data, dtype=np.uint8).reshape(
+                    (dimg.height, dimg.width, 4)
+                )
+                depth_m = carla_depth_to_meters(draw)
             writer.add_frame(
                 _carla_image_to_bgr(limg),
                 _carla_image_to_bgr(rimg),
                 c2w,
                 timestamp=snap * (1.0 / fps),
+                depth_m=depth_m,
             )
             if i % 100 == 0:
                 print(f"[record]   frame {i}/{num_frames}")

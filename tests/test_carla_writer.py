@@ -38,3 +38,21 @@ def test_roundtrip_through_kitti_loader(tmp_path):
     pos = data.gt_positions()
     assert np.allclose(pos[0], [0, 0, 0], atol=1e-6)
     assert np.allclose(pos[1], [0, 0, 2.0], atol=1e-6)
+
+
+def test_depth_map_roundtrips_to_metres(tmp_path):
+    import cv2
+
+    from carla_io.depth import uint16_cm_to_meters
+
+    K = fov_to_intrinsics(64, 48, 90.0)
+    w = KittiSequenceWriter(tmp_path, sequence="00")
+    w.write_calib(K, 0.54)
+    left = right = np.zeros((48, 64, 3), np.uint8)
+    depth_m = np.full((48, 64), 12.5, np.float32)  # 12.5 m everywhere
+    w.add_frame(left, right, np.eye(4), 0.0, depth_m=depth_m)
+    w.finalize()
+
+    saved = cv2.imread(str(tmp_path / "sequences/00/depth/000000.png"), cv2.IMREAD_UNCHANGED)
+    assert saved.dtype == np.uint16
+    assert np.allclose(uint16_cm_to_meters(saved), 12.5, atol=0.01)
