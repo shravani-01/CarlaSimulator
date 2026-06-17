@@ -139,9 +139,11 @@ streamlit run frontend/app.py
 ## Roadmap
 
 Done: perception stack · monocular/stereo VO · KITTI evaluation · loop-closure SLAM ·
-interactive web demo · dense 3D + Gaussian-Splatting reconstruction.
-Next: CARLA multi-sensor capture · ONNX/TensorRT edge optimization · C++ geometry
-core (g2o/GTSAM) · splat-based relocalization study.
+interactive web demo · dense 3D + Gaussian-Splatting reconstruction · **CARLA
+synchronized stereo capture** (writes KITTI-format data so the whole pipeline runs
+on self-recorded, perfect-ground-truth drives — see `docs/SETUP_CARLA.md`).
+Next: ONNX/TensorRT edge optimization · C++ geometry core (g2o/GTSAM) · splat-based
+relocalization study.
 See `STATUS.md` for the full breakdown.
 
 ## License

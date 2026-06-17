@@ -2,7 +2,7 @@
 
 _A self-driving visual-perception stack: perception (detection/segmentation/tracking) + geometry (VO → stereo VO → loop-closure SLAM), built from scratch and validated on KITTI._
 
-**Last updated:** 2026-06 · **Tests:** 28 passing · **Status:** perception + geometry + neural-3D complete & working
+**Last updated:** 2026-06 · **Tests:** 35 passing · **Status:** perception + geometry + neural-3D + CARLA capture complete & working
 
 ---
 
@@ -31,7 +31,7 @@ _A self-driving visual-perception stack: perception (detection/segmentation/trac
 **Foundation / engineering**
 - Monorepo scaffold; `pyproject.toml` with grouped extras; Hydra configs; Makefile
 - Git + DVC initialized; GitHub repo + CI workflow; pre-commit; ruff/mypy
-- `conftest` import bootstrap (robust to conda/pyenv); 28 unit tests; lint clean
+- `conftest` import bootstrap (robust to conda/pyenv); 35 unit tests; lint clean
 
 **Phase 1 — Perception (Python)**
 - `detection/` — YOLO `Detector` wrapper + demo
@@ -71,9 +71,12 @@ _A self-driving visual-perception stack: perception (detection/segmentation/trac
 - ✅ Gaussian-Splatting reconstruction (splatfacto on our VO poses, COLMAP-free) on RunPod GPU
 - ⬜ remaining stretch: splat-based **relocalization study** (the roadmap's headline research question)
 
-**D. The CARLA spine (the project's namesake)**
-- Set up CARLA on RunPod, implement the real `carla_io/record_dataset.py` capture loop
-- Re-run perception + VO/SLAM on self-recorded multi-sensor data
+**D. The CARLA spine (the project's namesake)** — capture loop ✅ done, recording ⬜ next
+- ✅ Implemented the real `carla_io/record_dataset.py`: synchronous stereo capture +
+  GT poses, writing **KITTI-format** data so the whole pipeline reuses it unchanged
+- ✅ `carla_io/coords.py` (Unreal→OpenCV conversion) + `kitti_writer.py`, both unit-tested
+- ✅ RunPod runbook in `docs/SETUP_CARLA.md`
+- ⬜ Run an actual recording on a CARLA pod, then re-run VO/SLAM/splat on it
 
 **E. Production / MLOps & edge**
 - ONNX/TensorRT export + latency benchmarks (the Tesla "onboard" angle)
