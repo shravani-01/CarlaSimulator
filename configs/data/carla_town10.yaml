@@ -1,0 +1,30 @@
+# CARLA data-capture configuration for one recording session.
+name: carla_town10
+town: Town10HD_Opt
+recordings_dir: data/recordings
+sequence: "00"          # written as sequences/<sequence>/ in KITTI layout
+
+# CARLA server connection (the simulator the client talks to).
+host: localhost
+port: 2000
+
+sensors:
+  rgb:
+    width: 1280
+    height: 720
+    fov: 90
+    baseline: 0.54       # stereo separation (m); matches KITTI's ~0.54 m
+  depth: true            # ground-truth depth (reserved for later)
+  semantic: true         # ground-truth semantic segmentation (reserved for later)
+  imu: true
+  gps: true
+
+capture:
+  fps: 20
+  num_frames: 1000
+  warmup_frames: 30      # ticks to discard so traffic settles + car starts moving
+  num_vehicles: 40
+  num_walkers: 20
+
+# Scenario knobs used for the robustness study (Phase 5).
+weather: ClearNoon       # ClearNoon | WetNoon | HardRainNoon | ClearNight | ...

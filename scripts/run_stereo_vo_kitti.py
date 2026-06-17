@@ -53,6 +53,8 @@ def main() -> None:
     )
 
     aligned, _ = align_umeyama(est, gt)
+    # Label the dataset from the root path (KITTI vs self-recorded CARLA).
+    dataset = "CARLA" if "carla" in str(args.root).lower() else "KITTI"
     OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
     plt.figure(figsize=(7, 7))
     plt.plot(gt[:, 0], gt[:, 2], label="ground truth", linewidth=2)
@@ -60,7 +62,7 @@ def main() -> None:
     plt.axis("equal")
     plt.xlabel("x (m)")
     plt.ylabel("z (m)")
-    plt.title(f"KITTI seq {args.sequence}: stereo VO vs GT (ATE={metrics['ate']:.2f} m)")
+    plt.title(f"{dataset} seq {args.sequence}: stereo VO vs GT (ATE={metrics['ate']:.2f} m)")
     plt.legend()
     plt.grid(True, alpha=0.3)
     plt.savefig(OUTPUT_PATH, dpi=120, bbox_inches="tight")

@@ -27,6 +27,7 @@ benchmark. Built in Python with a clean, tested, config-driven codebase.
 | **Dense 3D reconstruction** | colored point-cloud map (~440K points) | SGBM stereo + pose fusion |
 | Multi-object tracking | persistent IDs across frames | IoU tracker (unit-tested) |
 | **Neural 3D (Gaussian Splatting)** | photorealistic novel-view flythrough, **COLMAP-free** | splatfacto on *our* stereo-VO poses |
+| **CARLA self-recorded drive** | stereo VO **ATE ≈ 0.59 m** vs *perfect* ground truth | synchronized capture → same pipeline |
 
 **Why the progression matters:** monocular VO can't recover real-world scale, so
 its trajectory collapses. Stereo fixes scale via the known camera baseline. Loop
@@ -58,6 +59,28 @@ to *mapping* (what does the world look like?) using one consistent geometry stac
 sharpens along the driving axis but streaks at the frame edges — a real, expected
 limitation of dashcam-style capture that segments with turning would reduce. Full
 runbook in [`docs/SETUP_GAUSSIAN_SPLATTING.md`](docs/SETUP_GAUSSIAN_SPLATTING.md).
+
+---
+
+## CARLA — self-recorded data with perfect ground truth
+
+Everything above runs on KITTI. To close the loop, I built a **CARLA capture
+pipeline** that drives a virtual car with a synchronized stereo rig and records
+frames **plus exact ground-truth poses**, writing them in KITTI odometry format so
+the *entire* pipeline above runs on self-generated data with no code changes.
+
+Running my stereo VO on a 1000-frame CARLA drive, scored against CARLA's perfect
+ground truth:
+
+![CARLA stereo VO vs ground truth](docs/images/carla_stereo_vo.png)
+
+**Stereo VO ATE ≈ 0.59 m, RPE ≈ 0.02 m, scale ≈ 1.01** — sub-metre, with the
+near-1.0 alignment scale confirming the Unreal→OpenCV coordinate conversion is
+correct (a mirrored frame would blow ATE up). Because the ground truth is exact,
+this isolates and **validates the VO algorithm itself** — any residual error is the
+method's, not sensor noise. The capture is also scriptable (routes, traffic,
+weather), so a turning route gives the viewpoint diversity that improves
+Gaussian-Splatting reconstruction. Runbook: [`docs/SETUP_CARLA.md`](docs/SETUP_CARLA.md).
 
 ---
 

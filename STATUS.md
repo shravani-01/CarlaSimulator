@@ -18,11 +18,13 @@ _A self-driving visual-perception stack: perception (detection/segmentation/trac
 | **Loop-closure SLAM (KITTI 00)** | **ATE 25 m → 9.5 m (−62%)** | 7 loops, pose-graph optimization |
 | Dense 3D reconstruction | colored point cloud (~440K pts) | SGBM stereo + pose fusion |
 | **Gaussian Splatting (KITTI 00)** | **641K-Gaussian splat + flythrough, COLMAP-free** | splatfacto on our stereo-VO poses |
+| **CARLA self-recorded drive** | stereo VO **ATE ≈ 0.59 m** vs perfect GT | own synchronized stereo capture → same pipeline |
 
 **Portfolio one-liners:**
 - _"Stereo SLAM on KITTI seq 00 — loop closure + pose-graph optimization cut trajectory drift 62% (ATE 25 m → 9.5 m)."_
 - _"Built monocular → stereo VO with metric scale and ATE/RPE evaluation; debugged SE2 coordinate-frame and Jacobian-sparsity issues to make loop closure work and run fast."_
 - _"Reconstructed a photorealistic Gaussian-Splatting map of a KITTI street by feeding my own stereo-VO camera poses into nerfstudio — skipping COLMAP entirely."_
+- _"Built a CARLA capture pipeline (synchronized stereo + ground-truth poses, KITTI format) and validated my stereo VO to ~0.59 m ATE against the simulator's perfect ground truth."_
 
 ---
 
@@ -71,12 +73,14 @@ _A self-driving visual-perception stack: perception (detection/segmentation/trac
 - ✅ Gaussian-Splatting reconstruction (splatfacto on our VO poses, COLMAP-free) on RunPod GPU
 - ⬜ remaining stretch: splat-based **relocalization study** (the roadmap's headline research question)
 
-**D. The CARLA spine (the project's namesake)** — capture loop ✅ done, recording ⬜ next
+**D. The CARLA spine (the project's namesake)** — ✅ done
 - ✅ Implemented the real `carla_io/record_dataset.py`: synchronous stereo capture +
   GT poses, writing **KITTI-format** data so the whole pipeline reuses it unchanged
 - ✅ `carla_io/coords.py` (Unreal→OpenCV conversion) + `kitti_writer.py`, both unit-tested
 - ✅ RunPod runbook in `docs/SETUP_CARLA.md`
-- ⬜ Run an actual recording on a CARLA pod, then re-run VO/SLAM/splat on it
+- ✅ Recorded a 1000-frame Town10 drive on a CARLA GPU pod; stereo VO scored
+  **ATE ≈ 0.59 m** vs perfect ground truth (validates the algorithm itself)
+- ⬜ stretch: re-run loop-closure SLAM + Gaussian Splatting on the CARLA drive
 
 **E. Production / MLOps & edge**
 - ONNX/TensorRT export + latency benchmarks (the Tesla "onboard" angle)

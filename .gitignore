@@ -36,7 +36,8 @@ wandb/
 checkpoints/
 
 # --- Data (tracked by DVC, not git) ---
-data/
+# Anchored to repo root so configs/data/ (Hydra configs) stays tracked.
+/data/
 recordings/
 *.bag
 *.ply
