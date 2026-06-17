@@ -2,7 +2,7 @@
 
 _A self-driving visual-perception stack: perception (detection/segmentation/tracking) + geometry (VO → stereo VO → loop-closure SLAM), built from scratch and validated on KITTI._
 
-**Last updated:** 2026-06 · **Tests:** 21 passing · **Status:** geometry pipeline complete & working
+**Last updated:** 2026-06 · **Tests:** 28 passing · **Status:** perception + geometry + neural-3D complete & working
 
 ---
 
@@ -16,10 +16,13 @@ _A self-driving visual-perception stack: perception (detection/segmentation/trac
 | Monocular VO (KITTI 00) | RPE ≈ 0.26 m; scale **collapses** | shows the monocular scale problem |
 | **Stereo VO (KITTI 00)** | **metric scale; ATE ≈ 26 m / ~0.7% over 3.7 km** | PnP + stereo depth |
 | **Loop-closure SLAM (KITTI 00)** | **ATE 25 m → 9.5 m (−62%)** | 7 loops, pose-graph optimization |
+| Dense 3D reconstruction | colored point cloud (~440K pts) | SGBM stereo + pose fusion |
+| **Gaussian Splatting (KITTI 00)** | **641K-Gaussian splat + flythrough, COLMAP-free** | splatfacto on our stereo-VO poses |
 
 **Portfolio one-liners:**
 - _"Stereo SLAM on KITTI seq 00 — loop closure + pose-graph optimization cut trajectory drift 62% (ATE 25 m → 9.5 m)."_
 - _"Built monocular → stereo VO with metric scale and ATE/RPE evaluation; debugged SE2 coordinate-frame and Jacobian-sparsity issues to make loop closure work and run fast."_
+- _"Reconstructed a photorealistic Gaussian-Splatting map of a KITTI street by feeding my own stereo-VO camera poses into nerfstudio — skipping COLMAP entirely."_
 
 ---
 
@@ -28,7 +31,7 @@ _A self-driving visual-perception stack: perception (detection/segmentation/trac
 **Foundation / engineering**
 - Monorepo scaffold; `pyproject.toml` with grouped extras; Hydra configs; Makefile
 - Git + DVC initialized; GitHub repo + CI workflow; pre-commit; ruff/mypy
-- `conftest` import bootstrap (robust to conda/pyenv); 21 unit tests; lint clean
+- `conftest` import bootstrap (robust to conda/pyenv); 28 unit tests; lint clean
 
 **Phase 1 — Perception (Python)**
 - `detection/` — YOLO `Detector` wrapper + demo
@@ -63,9 +66,10 @@ _A self-driving visual-perception stack: perception (detection/segmentation/trac
 **B. Live demo (the LinkedIn centerpiece)**
 - `frontend/` web app: load a clip → live detection + segmentation + trajectory + 3D view (Rerun/Streamlit). Fast to iterate, big visual payoff.
 
-**C. Dense 3D / neural reconstruction (the "original contribution")**
-- Stereo point-cloud / dense reconstruction from the keyframes
-- Gaussian-Splatting reconstruction + relocalization study (the roadmap's headline research question)
+**C. Dense 3D / neural reconstruction (the "original contribution")** — ✅ done
+- ✅ Stereo point-cloud / dense reconstruction from the keyframes
+- ✅ Gaussian-Splatting reconstruction (splatfacto on our VO poses, COLMAP-free) on RunPod GPU
+- ⬜ remaining stretch: splat-based **relocalization study** (the roadmap's headline research question)
 
 **D. The CARLA spine (the project's namesake)**
 - Set up CARLA on RunPod, implement the real `carla_io/record_dataset.py` capture loop

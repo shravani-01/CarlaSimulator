@@ -41,6 +41,7 @@ recordings/
 *.bag
 *.ply
 *.splat
+*.zip
 
 # --- Secrets ---
 .env

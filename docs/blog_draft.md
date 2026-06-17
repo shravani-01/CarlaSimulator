@@ -98,13 +98,43 @@ And it isn't overfit to one route: running the *same parameters* on KITTI seq 05
 (a different drive) reduced drift from 8.6 m to 5.8 m (−33%). The pipeline
 generalizes.
 
+## Step 4 — From localization to mapping: Gaussian Splatting without COLMAP
+
+A trajectory tells you *where the camera went*. The natural next question is *what
+the world looks like* — and the modern answer is a neural 3D representation like
+Gaussian Splatting, which fits millions of tiny 3D blobs to a set of posed images
+so you can fly a virtual camera through a photorealistic reconstruction.
+
+There's a catch the tutorials gloss over: Gaussian-Splatting trainers need to know
+the camera pose for every image, and they normally get those by running **COLMAP**
+— a slow structure-from-motion step that re-estimates the very thing my SLAM
+pipeline already computes. So I skipped it. I exported my KITTI frames with the
+camera poses straight from my **stereo VO**, in the format nerfstudio expects, and
+trained `splatfacto` on a GPU. (The one real gotcha: my poses are in OpenCV camera
+convention and nerfstudio wants OpenGL, so each pose gets a y/z axis flip.)
+
+The result is a ~641K-Gaussian model of the street and a rendered flythrough —
+built on *my* geometry, no COLMAP in the loop.
+
+![Gaussian Splatting flythrough](images/gaussian_splat.gif)
+
+**The honest part:** the reconstruction is crisp along the direction of travel but
+streaks and smears toward the frame edges. That's not a bug — it's geometry.
+Dashcam-style forward driving gives almost no *sideways* parallax, so the trainer
+has little information about surfaces off to the side. A route with turns, or a
+sensor rig with wider viewpoints, would fill that in. Seeing the failure mode and
+being able to explain *why* it happens is, to me, more valuable than a cherry-picked
+clean render.
+
 ## What I'd do next
 
 This is a planar (SE2) pose graph in Python — great for learning and for this
 result, but production SLAM uses full 6-DOF graphs in C++ (g2o / GTSAM / Ceres)
 with sparse analytic Jacobians. Natural next steps: a second sensor for tighter
-scale (visual-inertial), dense 3D reconstruction (Gaussian Splatting) from the
-keyframes, and porting the geometry hot path to C++.
+scale (visual-inertial), porting the geometry hot path to C++, and the experiment
+the splat sets up — *can I relocalize a held-out frame by matching it against
+novel views rendered from the Gaussian map, and does that beat a classical feature
+map?* That's the research question worth chasing next.
 
 ## Takeaways
 
