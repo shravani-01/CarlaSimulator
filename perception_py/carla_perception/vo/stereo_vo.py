@@ -1,4 +1,4 @@
-"""Stereo visual odometry — VO with TRUE METRIC SCALE.
+"""Stereo visual odometry - VO with TRUE METRIC SCALE.
 
 WHY STEREO FIXES MONOCULAR VO
 -----------------------------
@@ -7,7 +7,7 @@ drifts in scale and collapses. Two cameras a known distance apart (the stereo
 *baseline*) let us triangulate METRIC depth for each feature every frame. With
 real 3D points in hand, we estimate motion by PnP (perspective-n-point):
 match this frame's 3D points to where they reappear in the next frame and solve
-for the camera motion that explains them — in real metres.
+for the camera motion that explains them - in real metres.
 
 PIPELINE PER FRAME
 ------------------

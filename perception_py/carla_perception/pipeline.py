@@ -11,8 +11,8 @@ into ONE component with a single, stable API:
     result   = pipeline.process(frame)     # -> detections + per-pixel labels
     vis      = pipeline.render(frame, result)
 
-Everything downstream — the CARLA capture loop, the web demo, the evaluation
-scripts — will call THIS pipeline. That keeps the "what perception does to a
+Everything downstream - the CARLA capture loop, the web demo, the evaluation
+scripts - will call THIS pipeline. That keeps the "what perception does to a
 frame" logic in exactly one place, which is the whole point of an integration
 layer.
 

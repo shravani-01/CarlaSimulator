@@ -1,4 +1,4 @@
-"""Smoke tests — prove the package imports and the metrics are correct.
+"""Smoke tests - prove the package imports and the metrics are correct.
 
 These run in CI (no GPU, no CARLA, no torch needed).
 """

@@ -10,7 +10,7 @@ wrap it behind a small, stable API.
 The wrapper matters: the rest of the codebase talks to OUR `Detector` and gets
 back clean `Detection` objects. It never imports `ultralytics` directly. That
 means later we can fine-tune on CARLA data, change the YOLO version, or even
-swap in a totally different detector — and no calling code has to change.
+swap in a totally different detector - and no calling code has to change.
 
 This is the same design idea as the whole project: a stable interface on the
 outside, swappable implementation on the inside.
@@ -47,7 +47,7 @@ class Detector:
 
     Args:
         weights: path or name of the YOLO weights. "yolo11n.pt" is the smallest
-                 ("n" = nano) pretrained model — fast, downloads automatically
+                 ("n" = nano) pretrained model - fast, downloads automatically
                  the first time, good enough to see results on a laptop.
         conf:    minimum confidence to keep a detection (filters weak guesses).
         iou:     IoU threshold for non-max suppression (removes duplicate boxes

@@ -1,9 +1,9 @@
-"""CarlaPerception — interactive web demo (Streamlit).
+"""CarlaPerception - interactive web demo (Streamlit).
 
 Two tabs:
-  1. Live perception  — run detection + segmentation on a KITTI driving frame,
+  1. Live perception  - run detection + segmentation on a KITTI driving frame,
      a built-in sample, or an uploaded image, and see the annotated result.
-  2. SLAM results     — view the monocular vs. stereo vs. loop-closure trajectory
+  2. SLAM results     - view the monocular vs. stereo vs. loop-closure trajectory
      plots and the headline metrics.
 
 Run from the project root:
@@ -156,7 +156,7 @@ with tab_perc:
 # ---------------------------------------------------------------- tracking video
 with tab_track:
     st.subheader("Detection + tracking over a clip → annotated video")
-    st.caption("Each object keeps a stable `id:` as it moves — that's tracking.")
+    st.caption("Each object keeps a stable `id:` as it moves - that's tracking.")
     tsrc = st.radio("Source", ["KITTI clip", "Upload video"], horizontal=True, key="tsrc")
     seg_overlay = st.checkbox("Also overlay segmentation (slower)", value=False)
     fcw = st.checkbox("⚠️ Forward-collision warning (KITTI stereo)", value=False,
@@ -184,7 +184,7 @@ with tab_track:
             st.warning(f"Couldn't load KITTI ({e}). See docs/SETUP_KITTI.md, or upload a video.")
     else:
         if fcw:
-            st.info("Collision warning needs stereo — available for KITTI clips only.")
+            st.info("Collision warning needs stereo - available for KITTI clips only.")
         up = st.file_uploader("Upload a short video", type=["mp4", "mov", "avi"], key="tup")
         if up is not None and st.button("Generate tracking video", type="primary"):
             tmp = Path("outputs/demo/_upload.mp4")
@@ -220,7 +220,7 @@ with tab_track:
 
         out_path = Path("outputs/demo/tracking_app.mp4")
         write_video(out_path, annotated)
-        st.success(f"Done — {len(annotated)} frames" + (" (with collision warning)" if use_fcw else ""))
+        st.success(f"Done - {len(annotated)} frames" + (" (with collision warning)" if use_fcw else ""))
         st.video(str(out_path))
         st.download_button("Download MP4", out_path.read_bytes(), "tracking.mp4", "video/mp4")
 

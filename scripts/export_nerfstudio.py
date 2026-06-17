@@ -4,7 +4,7 @@ Produces a folder ready for Gaussian-Splatting training on a GPU (RunPod):
     <out>/images/000000.png ...
     <out>/transforms.json    (intrinsics + per-image camera poses from our VO)
 
-Runs locally on CPU (no GPU needed) — it's just VO + writing files.
+Runs locally on CPU (no GPU needed) - it's just VO + writing files.
 
 Usage (project root):
     PYTHONPATH=perception_py .venv/bin/python scripts/export_nerfstudio.py \
@@ -59,7 +59,7 @@ def main() -> None:
     transforms = build_transforms(frames, data.K, width, height, convention=args.convention)
     (out / "transforms.json").write_text(json.dumps(transforms, indent=2))
     print(f"[export] wrote {len(frames)} posed images + transforms.json")
-    print(f"[export] upload '{out}' to RunPod — see docs/SETUP_GAUSSIAN_SPLATTING.md")
+    print(f"[export] upload '{out}' to RunPod - see docs/SETUP_GAUSSIAN_SPLATTING.md")
 
 
 if __name__ == "__main__":

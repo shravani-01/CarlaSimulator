@@ -6,7 +6,7 @@ CARLA inherits Unreal Engine's **left-handed** coordinate system, while every
 piece of geometry code we already wrote (VO, stereo, SLAM, the KITTI loader)
 assumes the **right-handed OpenCV/KITTI** convention. If we get this conversion
 wrong, the recorded ground-truth trajectory is mirror-flipped and nothing lines
-up — the same class of bug that cost us hours on SE2 yaw and the splat export.
+up - the same class of bug that cost us hours on SE2 yaw and the splat export.
 
 So we isolate the conversion into pure functions that need no CARLA install and
 are pinned by unit tests (`tests/test_carla_coords.py`).
@@ -62,7 +62,7 @@ def ue_matrix_to_opencv_c2w(m: NDArray[np.floating]) -> NDArray[np.float64]:
     """Convert a CARLA camera ``get_matrix()`` to an OpenCV camera-to-world pose.
 
     Args:
-        m: 4x4 matrix from ``carla.Transform.get_matrix()`` — maps a point in the
+        m: 4x4 matrix from ``carla.Transform.get_matrix()`` - maps a point in the
            camera's local (Unreal) frame to the (Unreal) world frame.
 
     Returns:

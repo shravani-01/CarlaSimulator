@@ -7,7 +7,7 @@ Two ways to feed it frames:
                          can watch the tracker keep stable IDs as they move.
 
 It writes outputs/demo/tracking.mp4 with each object boxed and labelled
-"id:label" — the id should stay the SAME for an object across the whole clip.
+"id:label" - the id should stay the SAME for an object across the whole clip.
 
 Usage (project root, venv active):
     python scripts/demo_tracking.py

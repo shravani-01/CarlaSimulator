@@ -1,4 +1,4 @@
-"""Unit tests for the IoU tracker (no GPU / model needed — runs in CI)."""
+"""Unit tests for the IoU tracker (no GPU / model needed - runs in CI)."""
 
 from carla_perception.detection.detector import Detection
 from carla_perception.tracking.tracker import IoUTracker, iou

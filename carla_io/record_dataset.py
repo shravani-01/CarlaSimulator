@@ -9,7 +9,7 @@ How it works (the CARLA client/server split):
     *client*: it connects over the Python API, spawns a car ("ego"), bolts a
     left+right camera onto it, and drives.
   * We put the world in **synchronous mode** so each ``world.tick()`` produces
-    exactly one frame per sensor with matching timestamps — essential for stereo.
+    exactly one frame per sensor with matching timestamps - essential for stereo.
   * Every tick we save the stereo pair and the car's *exact* pose (the reason to
     use a simulator: perfect ground truth, plus we can script routes with turns).
 
@@ -99,7 +99,7 @@ def record(cfg: DictConfig) -> None:
     try:
         import carla
     except Exception:
-        print("[record] `carla` not installed — dry run only. "
+        print("[record] `carla` not installed - dry run only. "
               "See docs/SETUP_CARLA.md.", file=sys.stderr)
         return
 

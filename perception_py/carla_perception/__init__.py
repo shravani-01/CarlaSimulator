@@ -1,4 +1,4 @@
-"""CarlaPerception — self-driving visual perception stack.
+"""CarlaPerception - self-driving visual perception stack.
 
 Subpackages:
     detection      object detection (YOLO + 3D lifting)

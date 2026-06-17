@@ -1,4 +1,4 @@
-# Project Status — CarlaPerception
+# Project Status - CarlaPerception
 
 _A self-driving visual-perception stack: perception (detection/segmentation/tracking) + geometry (VO → stereo VO → loop-closure SLAM), built from scratch and validated on KITTI._
 
@@ -21,9 +21,9 @@ _A self-driving visual-perception stack: perception (detection/segmentation/trac
 | **CARLA self-recorded drive** | stereo VO **ATE ≈ 0.59 m** vs perfect GT | own synchronized stereo capture → same pipeline |
 
 **Portfolio one-liners:**
-- _"Stereo SLAM on KITTI seq 00 — loop closure + pose-graph optimization cut trajectory drift 62% (ATE 25 m → 9.5 m)."_
+- _"Stereo SLAM on KITTI seq 00 - loop closure + pose-graph optimization cut trajectory drift 62% (ATE 25 m → 9.5 m)."_
 - _"Built monocular → stereo VO with metric scale and ATE/RPE evaluation; debugged SE2 coordinate-frame and Jacobian-sparsity issues to make loop closure work and run fast."_
-- _"Reconstructed a photorealistic Gaussian-Splatting map of a KITTI street by feeding my own stereo-VO camera poses into nerfstudio — skipping COLMAP entirely."_
+- _"Reconstructed a photorealistic Gaussian-Splatting map of a KITTI street by feeding my own stereo-VO camera poses into nerfstudio - skipping COLMAP entirely."_
 - _"Built a CARLA capture pipeline (synchronized stereo + ground-truth poses, KITTI format) and validated my stereo VO to ~0.59 m ATE against the simulator's perfect ground truth."_
 
 ---
@@ -35,24 +35,24 @@ _A self-driving visual-perception stack: perception (detection/segmentation/trac
 - Git + DVC initialized; GitHub repo + CI workflow; pre-commit; ruff/mypy
 - `conftest` import bootstrap (robust to conda/pyenv); 35 unit tests; lint clean
 
-**Phase 1 — Perception (Python)**
-- `detection/` — YOLO `Detector` wrapper + demo
-- `segmentation/` — DeepLabV3 `Segmenter` wrapper + demo
-- `tracking/` — `IoUTracker` with persistent IDs + **unit tests** + video demo
-- `pipeline.py` — combined `PerceptionPipeline(process → render)` + demo
-- `metrics.py` — ATE, RPE, mean-IoU + **unit tests**
+**Phase 1 - Perception (Python)**
+- `detection/` - YOLO `Detector` wrapper + demo
+- `segmentation/` - DeepLabV3 `Segmenter` wrapper + demo
+- `tracking/` - `IoUTracker` with persistent IDs + **unit tests** + video demo
+- `pipeline.py` - combined `PerceptionPipeline(process → render)` + demo
+- `metrics.py` - ATE, RPE, mean-IoU + **unit tests**
 
-**Phase 2 — Geometry / VO**
-- `vo/monocular_vo.py` — ORB + essential-matrix relative pose + trajectory; **synthetic-geometry test**
-- `vo/stereo_vo.py` — stereo depth + PnP, **metric scale**; **synthetic metric-pose test**
-- `datasets/kitti.py` — KITTI odometry loader (stereo + intrinsics + baseline + GT poses)
-- `trajectory.py` — Umeyama alignment + `evaluate_trajectory`; **unit tests**
+**Phase 2 - Geometry / VO**
+- `vo/monocular_vo.py` - ORB + essential-matrix relative pose + trajectory; **synthetic-geometry test**
+- `vo/stereo_vo.py` - stereo depth + PnP, **metric scale**; **synthetic metric-pose test**
+- `datasets/kitti.py` - KITTI odometry loader (stereo + intrinsics + baseline + GT poses)
+- `trajectory.py` - Umeyama alignment + `evaluate_trajectory`; **unit tests**
 - KITTI run scripts for mono + stereo VO with ATE/RPE + plots
 
-**Phase 3 — SLAM**
-- `slam/pose_graph.py` — SE2 pose-graph optimizer, **robust loss + sparse Jacobian**; **loop-closure unit test**
-- `slam/stereo_slam.py` — keyframes + loop detection + PnP verification + gating; **SE2-conversion tests**
-- `run_slam_kitti.py` — cached keyframes (fast tuning) + tunable CLI knobs + before/after plot
+**Phase 3 - SLAM**
+- `slam/pose_graph.py` - SE2 pose-graph optimizer, **robust loss + sparse Jacobian**; **loop-closure unit test**
+- `slam/stereo_slam.py` - keyframes + loop detection + PnP verification + gating; **SE2-conversion tests**
+- `run_slam_kitti.py` - cached keyframes (fast tuning) + tunable CLI knobs + before/after plot
 
 **Bugs debugged the hard way** (good interview material): SE2 yaw handedness, odometry/edge consistency, sparse-Jacobian performance.
 
@@ -68,12 +68,12 @@ _A self-driving visual-perception stack: perception (detection/segmentation/trac
 **B. Live demo (the LinkedIn centerpiece)**
 - `frontend/` web app: load a clip → live detection + segmentation + trajectory + 3D view (Rerun/Streamlit). Fast to iterate, big visual payoff.
 
-**C. Dense 3D / neural reconstruction (the "original contribution")** — ✅ done
+**C. Dense 3D / neural reconstruction (the "original contribution")** - ✅ done
 - ✅ Stereo point-cloud / dense reconstruction from the keyframes
 - ✅ Gaussian-Splatting reconstruction (splatfacto on our VO poses, COLMAP-free) on RunPod GPU
 - ⬜ remaining stretch: splat-based **relocalization study** (the roadmap's headline research question)
 
-**D. The CARLA spine (the project's namesake)** — ✅ done
+**D. The CARLA spine (the project's namesake)** - ✅ done
 - ✅ Implemented the real `carla_io/record_dataset.py`: synchronous stereo capture +
   GT poses, writing **KITTI-format** data so the whole pipeline reuses it unchanged
 - ✅ `carla_io/coords.py` (Unreal→OpenCV conversion) + `kitti_writer.py`, both unit-tested
@@ -85,12 +85,12 @@ _A self-driving visual-perception stack: perception (detection/segmentation/trac
 **E. Production / MLOps & edge**
 - ONNX/TensorRT export + latency benchmarks (the Tesla "onboard" angle)
 - CARLA scenario validation testbed in CI; Evidently-style monitoring
-- C++ core for the geometry hot path (g2o/GTSAM/Ceres) — the production-optimization story
+- C++ core for the geometry hot path (g2o/GTSAM/Ceres) - the production-optimization story
 
 ---
 
 ## Recommended next step
 
-**Update the README with results, then build the live web demo (B).** Rationale: you now have genuinely strong, demonstrable results but they only live in terminal output and PNGs. A clickable demo + a polished README turns this from "scripts that print numbers" into a project a recruiter can *see* in 10 seconds — the highest return on effort right now. The CARLA spine (D) and 3D reconstruction (C) are bigger, and best tackled once the demo makes the current work shine.
+**Update the README with results, then build the live web demo (B).** Rationale: you now have genuinely strong, demonstrable results but they only live in terminal output and PNGs. A clickable demo + a polished README turns this from "scripts that print numbers" into a project a recruiter can *see* in 10 seconds - the highest return on effort right now. The CARLA spine (D) and 3D reconstruction (C) are bigger, and best tackled once the demo makes the current work shine.
 
-> Alternative if you'd rather show technical depth first: run **sequence 05/07** (A) to prove generalization — a quick win with the caching already in place.
+> Alternative if you'd rather show technical depth first: run **sequence 05/07** (A) to prove generalization - a quick win with the caching already in place.

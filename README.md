@@ -1,11 +1,11 @@
-# CarlaPerception — Visual Perception & SLAM for Self-Driving
+# CarlaPerception - Visual Perception & SLAM for Self-Driving
 
 A from-scratch self-driving **visual-perception and geometry** stack: 2D perception
-(detection, tracking, segmentation) plus a full geometric pipeline — **monocular →
-stereo visual odometry → loop-closure SLAM** — evaluated on the KITTI odometry
+(detection, tracking, segmentation) plus a full geometric pipeline - **monocular →
+stereo visual odometry → loop-closure SLAM** - evaluated on the KITTI odometry
 benchmark. Built in Python with a clean, tested, config-driven codebase.
 
-> **Headline:** stereo SLAM on KITTI seq 00 — loop closure + pose-graph
+> **Headline:** stereo SLAM on KITTI seq 00 - loop closure + pose-graph
 > optimization cut trajectory drift **62% (ATE 25 m → 9.5 m)** over a 3.7 km loop.
 
 ![Loop-closure SLAM vs ground truth](docs/images/slam_loop_closure.png)
@@ -32,7 +32,7 @@ benchmark. Built in Python with a clean, tested, config-driven codebase.
 **Why the progression matters:** monocular VO can't recover real-world scale, so
 its trajectory collapses. Stereo fixes scale via the known camera baseline. Loop
 closure then removes the remaining drift by recognizing revisited places and
-globally optimizing the trajectory — the core of modern SLAM.
+globally optimizing the trajectory - the core of modern SLAM.
 
 | Monocular VO (scale collapse) | Stereo VO (metric) |
 |---|---|
@@ -40,9 +40,9 @@ globally optimizing the trajectory — the core of modern SLAM.
 
 ---
 
-## Neural 3D — Gaussian Splatting (COLMAP-free)
+## Neural 3D - Gaussian Splatting (COLMAP-free)
 
-The geometry pipeline doesn't just *estimate* a trajectory — it can *reconstruct
+The geometry pipeline doesn't just *estimate* a trajectory - it can *reconstruct
 the scene*. I feed the camera poses from **my own stereo visual odometry** straight
 into a Gaussian-Splatting trainer (nerfstudio `splatfacto`), skipping the COLMAP
 structure-from-motion step that this workflow normally depends on. The result is a
@@ -50,19 +50,19 @@ photorealistic, free-viewpoint 3D model of the KITTI street (~641K Gaussians).
 
 ![Gaussian Splatting flythrough](docs/images/gaussian_splat.gif)
 
-*Novel-view flythrough rendered from the splat — camera poses supplied by this
+*Novel-view flythrough rendered from the splat - camera poses supplied by this
 project's stereo VO, not COLMAP.*
 
 **Why it matters:** it closes the loop from *localization* (where is the camera?)
 to *mapping* (what does the world look like?) using one consistent geometry stack.
 **Honest finding:** forward-only driving gives weak sideways parallax, so the splat
-sharpens along the driving axis but streaks at the frame edges — a real, expected
+sharpens along the driving axis but streaks at the frame edges - a real, expected
 limitation of dashcam-style capture that segments with turning would reduce. Full
 runbook in [`docs/SETUP_GAUSSIAN_SPLATTING.md`](docs/SETUP_GAUSSIAN_SPLATTING.md).
 
 ---
 
-## CARLA — self-recorded data with perfect ground truth
+## CARLA - self-recorded data with perfect ground truth
 
 Everything above runs on KITTI. To close the loop, I built a **CARLA capture
 pipeline** that drives a virtual car with a synchronized stereo rig and records
@@ -74,10 +74,10 @@ ground truth:
 
 ![CARLA stereo VO vs ground truth](docs/images/carla_stereo_vo.png)
 
-**Stereo VO ATE ≈ 0.59 m, RPE ≈ 0.02 m, scale ≈ 1.01** — sub-metre, with the
+**Stereo VO ATE ≈ 0.59 m, RPE ≈ 0.02 m, scale ≈ 1.01** - sub-metre, with the
 near-1.0 alignment scale confirming the Unreal→OpenCV coordinate conversion is
 correct (a mirrored frame would blow ATE up). Because the ground truth is exact,
-this isolates and **validates the VO algorithm itself** — any residual error is the
+this isolates and **validates the VO algorithm itself** - any residual error is the
 method's, not sensor noise. The capture is also scriptable (routes, traffic,
 weather), so a turning route gives the viewpoint diversity that improves
 Gaussian-Splatting reconstruction. Runbook: [`docs/SETUP_CARLA.md`](docs/SETUP_CARLA.md).
@@ -144,18 +144,18 @@ streamlit run frontend/app.py
 ## Engineering
 
 - **Tested:** 28 unit tests, including synthetic-geometry tests that verify VO
-  pose recovery, stereo metric scale, trajectory alignment, and loop closure —
+  pose recovery, stereo metric scale, trajectory alignment, and loop closure -
   all without needing image data, so they run in CI.
 - **Tooling:** Hydra configs, DVC, ruff + mypy, pre-commit, GitHub Actions CI.
 - **Performance:** pose-graph optimization uses a robust loss + a **sparse
   Jacobian**, turning the solve from minutes to seconds.
 
 ### Notable problems solved
-- **SE2 coordinate-frame handedness** — KITTI's downward Y axis flips planar yaw;
+- **SE2 coordinate-frame handedness** - KITTI's downward Y axis flips planar yaw;
   getting this wrong made loop closure diverge.
-- **Odometry/graph consistency** — deriving edges from projected node poses so
+- **Odometry/graph consistency** - deriving edges from projected node poses so
   only loop closures drive the correction.
-- **Optimizer scalability** — sparse-Jacobian finite differences for fast solves.
+- **Optimizer scalability** - sparse-Jacobian finite differences for fast solves.
 
 ---
 
@@ -164,7 +164,7 @@ streamlit run frontend/app.py
 Done: perception stack · monocular/stereo VO · KITTI evaluation · loop-closure SLAM ·
 interactive web demo · dense 3D + Gaussian-Splatting reconstruction · **CARLA
 synchronized stereo capture** (writes KITTI-format data so the whole pipeline runs
-on self-recorded, perfect-ground-truth drives — see `docs/SETUP_CARLA.md`).
+on self-recorded, perfect-ground-truth drives - see `docs/SETUP_CARLA.md`).
 Next: ONNX/TensorRT edge optimization · C++ geometry core (g2o/GTSAM) · splat-based
 relocalization study.
 See `STATUS.md` for the full breakdown.

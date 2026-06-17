@@ -1,4 +1,4 @@
-"""Forward-collision warning — the perception behind automatic emergency braking.
+"""Forward-collision warning - the perception behind automatic emergency braking.
 
 WHY THIS MODULE EXISTS
 ----------------------
@@ -6,7 +6,7 @@ A real car can't *decide to brake* without first perceiving that something is
 dangerously close ahead. That perception is exactly what we can do from stereo:
 measure the metric distance to each detected object, and flag the ones that are
 (a) in the car's forward path and (b) closer than a safe distance. This is a
-warning system — it does NOT steer or brake (that's planning/control, and needs
+warning system - it does NOT steer or brake (that's planning/control, and needs
 a simulator we control, e.g. CARLA).
 
 We reuse the stereo disparity already available from the reconstruction module.

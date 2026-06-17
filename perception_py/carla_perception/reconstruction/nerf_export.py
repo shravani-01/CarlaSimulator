@@ -4,8 +4,8 @@ WHY THIS MODULE EXISTS
 ----------------------
 Gaussian-Splatting trainers (nerfstudio's splatfacto, etc.) need posed images:
 each image plus the camera-to-world pose it was taken from. The usual pipeline
-runs COLMAP to *estimate* those poses. We already have poses — from our own
-stereo VO/SLAM — so we skip COLMAP and feed our poses directly. That's the
+runs COLMAP to *estimate* those poses. We already have poses - from our own
+stereo VO/SLAM - so we skip COLMAP and feed our poses directly. That's the
 integration: our geometry pipeline supplies the camera trajectory.
 
 POSE CONVENTION (the classic gotcha)

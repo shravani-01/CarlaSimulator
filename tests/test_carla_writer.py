@@ -1,5 +1,5 @@
 """Prove a CARLA capture, written in KITTI format, loads back through our own
-``KITTIOdometry`` pipeline — the whole reason for matching the layout.
+``KITTIOdometry`` pipeline - the whole reason for matching the layout.
 
 No CARLA needed: we synthesize a couple of tiny stereo frames + poses, write
 them, then read them straight back with the loader the VO/SLAM code already uses.

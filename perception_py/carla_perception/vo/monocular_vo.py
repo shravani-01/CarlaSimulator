@@ -4,7 +4,7 @@ WHY THIS MODULE EXISTS
 ----------------------
 Perception (detection/segmentation/tracking) tells us about OTHER things in the
 scene. Visual odometry (VO) tells us about US: how the camera itself moved
-between frames. Chained over time, that's the vehicle's trajectory — the
+between frames. Chained over time, that's the vehicle's trajectory - the
 foundation of SLAM, mapping, and localization, and exactly the "estimating
 geometric entities" skill the target roles ask for.
 
@@ -16,11 +16,11 @@ THE GEOMETRY (intuition)
 3. Decomposing the essential matrix recovers the rotation R and translation
    direction t between the two views.
 
-IMPORTANT — MONOCULAR SCALE AMBIGUITY
+IMPORTANT - MONOCULAR SCALE AMBIGUITY
 -------------------------------------
 With ONE camera you cannot know absolute scale (a small nearby motion looks
 identical to a large far one). So t is only a *direction* (unit length). Real
-systems fix scale using an IMU, stereo, wheel odometry, or known object sizes —
+systems fix scale using an IMU, stereo, wheel odometry, or known object sizes -
 which is why the target roles emphasize Visual-INERTIAL SLAM. We expose `scale`
 so a caller can supply it later.
 """
@@ -49,7 +49,7 @@ def estimate_relative_pose(
     Returns:
         (R, t, inlier_mask):
             R: 3x3 rotation taking a point from camera-1 frame to camera-2 frame.
-            t: 3x1 unit translation direction (scale is unknown — see module docs).
+            t: 3x1 unit translation direction (scale is unknown - see module docs).
             inlier_mask: which input matches were geometrically consistent.
     """
     pts1 = np.asarray(pts1, dtype=np.float64)

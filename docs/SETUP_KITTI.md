@@ -13,16 +13,16 @@ Grab these three:
 | File | Size | What it is |
 |---|---|---|
 | `data_odometry_calib.zip` | ~1 MB | camera calibration for all sequences |
-| `data_odometry_poses.zip` | ~4 MB | ground-truth poses (sequences 00–10) |
+| `data_odometry_poses.zip` | ~4 MB | ground-truth poses (sequences 00-10) |
 | `data_odometry_gray.zip` | ~22 GB | grayscale images (all sequences) |
 
 > The grayscale image zip is large because it bundles every sequence. You only
-> need one sequence to get started — once unzipped, you can keep just
+> need one sequence to get started - once unzipped, you can keep just
 > `sequences/00/` and delete the rest. Sequence **00** is the classic loop.
 
 ## Where to put it
 
-Unzip so the layout looks like this (anywhere on disk — you'll pass `--root`):
+Unzip so the layout looks like this (anywhere on disk - you'll pass `--root`):
 
 ```
 kitti_odometry/
@@ -36,7 +36,7 @@ kitti_odometry/
             └── ...
 ```
 
-Keep it **outside** the repo (it's big and shouldn't be committed — `data/` is
+Keep it **outside** the repo (it's big and shouldn't be committed - `data/` is
 gitignored anyway).
 
 ## Run VO on it
@@ -47,11 +47,11 @@ python scripts/run_vo_kitti.py --root /path/to/kitti_odometry --sequence 00 --ma
 python scripts/run_vo_kitti.py --root /path/to/kitti_odometry --sequence 00
 ```
 
-This prints ATE / RPE and saves `outputs/demo/vo_kitti_trajectory.png` — your
+This prints ATE / RPE and saves `outputs/demo/vo_kitti_trajectory.png` - your
 estimated path overlaid on ground truth.
 
 ## Note on monocular results
 
 Pure monocular VO has no absolute scale and drifts over long sequences, so the
-plotted path won't perfectly match — that's expected and exactly what motivates
+plotted path won't perfectly match - that's expected and exactly what motivates
 the next steps (loop closure, bundle adjustment, and IMU fusion for scale).

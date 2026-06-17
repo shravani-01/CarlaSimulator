@@ -1,4 +1,4 @@
-"""Planar (SE2) pose-graph optimization — the SLAM back-end.
+"""Planar (SE2) pose-graph optimization - the SLAM back-end.
 
 WHY THIS MODULE EXISTS
 ----------------------
