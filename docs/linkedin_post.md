@@ -14,24 +14,27 @@ The journey, in one line each:
 -> Loop-closure SLAM - recognizes revisited places and cut trajectory drift 62% (25 m -> 9.5 m over a 3.7 km loop)
 -> Gaussian Splatting - reconstructed the street in photorealistic 3D, feeding in my *own* camera poses and skipping the usual COLMAP step
 -> CARLA - generated my own driving data in simulation and validated the whole pipeline against perfect ground truth (0.59 m error)
+-> Deep learning - and since geometry alone can't get depth from one camera, I trained a network (ResNet-U-Net) to predict it, supervised by the simulator's perfect depth (AbsRel 0.21). Then I ran it on real KITTI photos to measure the sim-to-real gap.
 
-The honest part: there's plenty I'd still improve - it's a planar pose graph in Python, not production 6-DOF C++. But I understand every line, and debugging a flipped coordinate frame at 1am taught me more than any course could.
+The honest part: there's plenty I'd still improve - the depth model is a small backbone on modest data, and it clearly degrades from simulator to real images. But I understand every line, and debugging a flipped coordinate frame at 1am taught me more than any course could.
 
 Biggest lesson: build your metrics first. I couldn't have debugged any of this without ATE/RPE in place from day one.
 
 Code + writeup 👉 [your repo link]
 
-#ComputerVision #SLAM #SelfDriving #Robotics #MachineLearning
+#ComputerVision #SLAM #SelfDriving #Robotics #DeepLearning #MachineLearning
 
 ---
 
 ## Visuals to attach (in this order)
 
-1. `docs/images/slam_loop_closure.png` - the SLAM before/after (your headline result)
-2. `docs/images/gaussian_splat.gif` - the 3D flythrough (the eye-catcher)
-3. `docs/images/carla_stereo_vo.png` - VO vs perfect CARLA ground truth
+1. `docs/images/gaussian_splat.gif` - the 3D flythrough (the eye-catcher; autoplays)
+2. `docs/images/slam_loop_closure.png` - the SLAM before/after (headline geometry result)
+3. `docs/images/depth_carla.png` - learned depth (input | prediction | ground truth)
+4. `docs/images/carla_stereo_vo.png` - VO vs perfect CARLA ground truth
 
-LinkedIn shows up to ~3 images well; the GIF will autoplay and is your scroll-stopper.
+LinkedIn shows ~4 images in a tidy grid; lead with the GIF as the scroll-stopper.
+(Swap in `docs/images/depth_sim2real_kitti.png` if you want to feature the sim-to-real angle.)
 
 ## Tips
 - Put the repo link in the FIRST comment, not the post body - LinkedIn suppresses

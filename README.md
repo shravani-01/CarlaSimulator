@@ -2,8 +2,9 @@
 
 A from-scratch self-driving **visual-perception and geometry** stack: 2D perception
 (detection, tracking, segmentation) plus a full geometric pipeline - **monocular ->
-stereo visual odometry -> loop-closure SLAM** - evaluated on the KITTI odometry
-benchmark. Built in Python with a clean, tested, config-driven codebase.
+stereo visual odometry -> loop-closure SLAM** - plus a **learned monocular-depth**
+network (deep learning) and self-generated CARLA data, evaluated on the KITTI
+odometry benchmark. Built in Python with a clean, tested, config-driven codebase.
 
 > **Headline:** stereo SLAM on KITTI seq 00 - loop closure + pose-graph
 > optimization cut trajectory drift **62% (ATE 25 m -> 9.5 m)** over a 3.7 km loop.
@@ -28,6 +29,7 @@ benchmark. Built in Python with a clean, tested, config-driven codebase.
 | Multi-object tracking | persistent IDs across frames | IoU tracker (unit-tested) |
 | **Neural 3D (Gaussian Splatting)** | photorealistic novel-view flythrough, **COLMAP-free** | splatfacto on *our* stereo-VO poses |
 | **CARLA self-recorded drive** | stereo VO **ATE ≈ 0.59 m** vs *perfect* ground truth | synchronized capture -> same pipeline |
+| **Learned monocular depth (DL)** | **AbsRel 0.21, delta1 0.74** on held-out CARLA | ResNet-U-Net trained from scratch on CARLA GT depth |
 
 **Why the progression matters:** monocular VO can't recover real-world scale, so
 its trajectory collapses. Stereo fixes scale via the known camera baseline. Loop
@@ -84,6 +86,35 @@ Gaussian-Splatting reconstruction. Runbook: [`docs/SETUP_CARLA.md`](docs/SETUP_C
 
 ---
 
+## Learned monocular depth (deep learning)
+
+The classical half of this project showed that a *single* camera cannot recover
+metric scale. The modern answer is to **learn** it: I trained a depth network (a
+ResNet-18 encoder + U-Net decoder, from scratch) to predict metric depth from one
+image, supervised by CARLA's perfect ground-truth depth (free, dense labels). Loss
+is scale-invariant log (SILog) + an absolute term; trained on a RunPod GPU.
+
+On held-out CARLA frames: **AbsRel 0.21, RMSE 8.3 m, delta<1.25 = 0.74** (left =
+input, middle = prediction, right = ground truth):
+
+![Learned depth on CARLA](docs/images/depth_carla.png)
+
+### Sim-to-real: how far does simulator training transfer?
+
+Running the *same* CARLA-trained model on **real KITTI** photos (no retraining) is a
+deliberate stress test. It transfers *partially* and clearly degrades - a real,
+expected **sim-to-real gap**, amplified here because KITTI odometry images are
+grayscale while training was on colour:
+
+![Sim-to-real on KITTI](docs/images/depth_sim2real_kitti.png)
+
+**Honest finding:** synthetic supervision gets you a working metric-depth model for
+free, but closing the gap to real imagery needs real data or domain adaptation - the
+kind of result worth stating plainly rather than hiding. Train/eval runbook:
+[`docs/SETUP_DEPTH_TRAINING.md`](docs/SETUP_DEPTH_TRAINING.md).
+
+---
+
 ## Architecture
 
 ```
@@ -118,7 +149,7 @@ Gaussian-Splatting reconstruction. Runbook: [`docs/SETUP_CARLA.md`](docs/SETUP_C
 ```bash
 python -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev,ml]"          # base + dev + deep-learning extras
-python -m pytest                    # 35 tests
+python -m pytest                    # 54 tests
 
 # Perception demos (download a sample image automatically)
 python scripts/demo_perception.py   # detection + segmentation in one pass
@@ -143,7 +174,7 @@ streamlit run frontend/app.py
 
 ## Engineering
 
-- **Tested:** 35 unit tests, including synthetic-geometry tests that verify VO
+- **Tested:** 54 unit tests, including synthetic-geometry tests that verify VO
   pose recovery, stereo metric scale, trajectory alignment, and loop closure -
   all without needing image data, so they run in CI.
 - **Tooling:** Hydra configs, DVC, ruff + mypy, pre-commit, GitHub Actions CI.
@@ -164,9 +195,10 @@ streamlit run frontend/app.py
 Done: perception stack · monocular/stereo VO · KITTI evaluation · loop-closure SLAM ·
 interactive web demo · dense 3D + Gaussian-Splatting reconstruction · **CARLA
 synchronized stereo capture** (writes KITTI-format data so the whole pipeline runs
-on self-recorded, perfect-ground-truth drives - see `docs/SETUP_CARLA.md`).
+on self-recorded, perfect-ground-truth drives) · **learned monocular depth** (a
+ResNet-U-Net trained on CARLA GT depth, with a sim-to-real study).
 Next: ONNX/TensorRT edge optimization · C++ geometry core (g2o/GTSAM) · splat-based
-relocalization study.
+relocalization study · learned-depth-scaled monocular VO.
 See `STATUS.md` for the full breakdown.
 
 ## License

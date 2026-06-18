@@ -51,3 +51,6 @@ recordings/
 # Hydra run outputs
 outputs/
 *.pt
+
+# Personal notes (kept local, not shared)
+docs/PROJECT_GUIDE.md

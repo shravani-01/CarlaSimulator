@@ -2,7 +2,7 @@
 
 _A self-driving visual-perception stack: perception (detection/segmentation/tracking) + geometry (VO -> stereo VO -> loop-closure SLAM), built from scratch and validated on KITTI._
 
-**Last updated:** 2026-06 · **Tests:** 35 passing · **Status:** perception + geometry + neural-3D + CARLA capture complete & working
+**Last updated:** 2026-06 · **Tests:** 54 passing · **Status:** perception + geometry + neural-3D + CARLA capture + learned depth (DL) complete & working
 
 ---
 
@@ -19,12 +19,15 @@ _A self-driving visual-perception stack: perception (detection/segmentation/trac
 | Dense 3D reconstruction | colored point cloud (~440K pts) | SGBM stereo + pose fusion |
 | **Gaussian Splatting (KITTI 00)** | **641K-Gaussian splat + flythrough, COLMAP-free** | splatfacto on our stereo-VO poses |
 | **CARLA self-recorded drive** | stereo VO **ATE ≈ 0.59 m** vs perfect GT | own synchronized stereo capture -> same pipeline |
+| **Learned monocular depth (DL)** | **AbsRel 0.21, RMSE 8.3 m, delta1 0.74** | ResNet-U-Net trained from scratch on CARLA GT depth |
+| Sim-to-real (CARLA->KITTI) | partial transfer; clear, honest gap | qualitative study on real grayscale images |
 
 **Portfolio one-liners:**
 - _"Stereo SLAM on KITTI seq 00 - loop closure + pose-graph optimization cut trajectory drift 62% (ATE 25 m -> 9.5 m)."_
 - _"Built monocular -> stereo VO with metric scale and ATE/RPE evaluation; debugged SE2 coordinate-frame and Jacobian-sparsity issues to make loop closure work and run fast."_
 - _"Reconstructed a photorealistic Gaussian-Splatting map of a KITTI street by feeding my own stereo-VO camera poses into nerfstudio - skipping COLMAP entirely."_
 - _"Built a CARLA capture pipeline (synchronized stereo + ground-truth poses, KITTI format) and validated my stereo VO to ~0.59 m ATE against the simulator's perfect ground truth."_
+- _"Trained a monocular-depth network (ResNet-U-Net, SILog loss) from scratch on simulator ground truth to AbsRel 0.21, and ran a sim-to-real study quantifying the gap on real KITTI images."_
 
 ---
 
@@ -33,7 +36,7 @@ _A self-driving visual-perception stack: perception (detection/segmentation/trac
 **Foundation / engineering**
 - Monorepo scaffold; `pyproject.toml` with grouped extras; Hydra configs; Makefile
 - Git + DVC initialized; GitHub repo + CI workflow; pre-commit; ruff/mypy
-- `conftest` import bootstrap (robust to conda/pyenv); 35 unit tests; lint clean
+- `conftest` import bootstrap (robust to conda/pyenv); 54 unit tests; lint clean
 
 **Phase 1 - Perception (Python)**
 - `detection/` - YOLO `Detector` wrapper + demo
@@ -81,6 +84,13 @@ _A self-driving visual-perception stack: perception (detection/segmentation/trac
 - ✅ Recorded a 1000-frame Town10 drive on a CARLA GPU pod; stereo VO scored
   **ATE ≈ 0.59 m** vs perfect ground truth (validates the algorithm itself)
 - ⬜ stretch: re-run loop-closure SLAM + Gaussian Splatting on the CARLA drive
+
+**F. Deep learning - learned monocular depth** - ✅ done
+- ✅ `depth/` module: dataset+transforms, ResNet-U-Net model, SILog+L1 losses, metrics, viz
+- ✅ CARLA recorder now also captures **ground-truth depth** (`carla_io/depth.py`, tested)
+- ✅ `train_depth.py` / `eval_depth.py` / `predict_depth.py`; trained on RunPod GPU
+- ✅ Result: **AbsRel 0.21 / delta1 0.74** on held-out CARLA; **sim-to-real** study on KITTI
+- ⬜ stretch: feed learned depth into monocular VO to restore metric scale (capstone tie-in)
 
 **E. Production / MLOps & edge**
 - ONNX/TensorRT export + latency benchmarks (the Tesla "onboard" angle)

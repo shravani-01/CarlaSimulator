@@ -145,15 +145,35 @@ almost exactly on the truth. That's a clean validation: on noise-free data the
 algorithm itself is accurate to centimetres-per-frame, so most of KITTI's larger
 error is real-world sensor noise, not the method.
 
+## Step 6 - The deep-learning angle: learning depth from one camera
+
+Step 1 proved a single camera *can't* recover metric scale by geometry alone. The
+modern answer is to **learn** it. Using CARLA's free, perfect, dense depth as the
+teacher, I trained a depth network from scratch - a ResNet-18 encoder with a U-Net
+decoder, supervised with the scale-invariant log loss (SILog) plus an absolute term.
+
+On held-out CARLA frames it reaches **AbsRel 0.21, RMSE 8.3 m, and delta<1.25 =
+0.74** (74% of pixels within 25% of the true distance). Not state-of-the-art - it's
+a small backbone on a modest, self-generated dataset - but it clearly *learns* depth
+from a single image, which is exactly the capability geometry couldn't give us.
+
+Then the honest stress test: run that simulator-trained model on **real KITTI
+photos**, no retraining. It transfers *partially* and visibly degrades - a textbook
+**sim-to-real gap**, made harsher here because KITTI's odometry cameras are
+grayscale while training was on colour. That's a finding, not a failure: synthetic
+data gets you a working model for free, but real-world deployment needs real data or
+domain adaptation.
+
 ## What I'd do next
 
 This is a planar (SE2) pose graph in Python - great for learning and for this
 result, but production SLAM uses full 6-DOF graphs in C++ (g2o / GTSAM / Ceres)
 with sparse analytic Jacobians. Natural next steps: a second sensor for tighter
-scale (visual-inertial), porting the geometry hot path to C++, and the experiment
-the splat sets up - *can I relocalize a held-out frame by matching it against
-novel views rendered from the Gaussian map, and does that beat a classical feature
-map?* That's the research question worth chasing next.
+scale (visual-inertial), porting the geometry hot path to C++, and two experiments
+the project sets up: feeding the **learned depth back into the monocular VO** to
+restore the metric scale geometry couldn't, and the splat relocalization question -
+*can I relocalize a held-out frame against novel views rendered from the Gaussian
+map, and does that beat a classical feature map?*
 
 ## Takeaways
 
